@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Assemblies\Pamaxie.Helpers\Pamaxie.Helpers.csproj" />
+    <PackageReference Include="Pamaxie.Data" Version="6.0.0" />
+    <PackageReference Include="Pamaxie.Helpers" Version="6.0.0" />
   </ItemGroup>
 
 </Project>
