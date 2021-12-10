@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Pamaxie.Database.Design\Pamaxie.Database.Design.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="DbValidationLogic\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="DbValidationLogic\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="DbValidationLogic\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Spectre.Console" Version="0.41.0" />
+    <PackageReference Include="StackExchange.Redis" Version="2.2.50" />
+  </ItemGroup>
+
+</Project>
