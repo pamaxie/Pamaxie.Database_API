@@ -1,34 +1,24 @@
 ﻿using Newtonsoft.Json;
-using Pamaxie.Data;
-using Pamaxie.Database.Design;
 using StackExchange.Redis;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pamaxie.Database.Redis.DataInteraction
 {
-    /// <inheritdoc cref="IPamaxieUserDataInteraction"/>
-    internal class PamaxieUserDataInteraction : PamaxieDataInteractionBase<PamaxieUser>, IPamaxieUserDataInteraction
+    /// <inheritdoc cref="Pamaxie.Database.Design.IPamaxieApplicationDataInteraction" />
+    internal class PamaxieApplicationDataInteraction : PamInteractionBase<PamaxieApplication>, IPamaxieApplicationDataInteraction
     {
-        /// <summary>
-        /// Used for accessing the Redis database
-        /// </summary>
         private PamaxieDatabaseDriver _owner;
-
         /// <summary>
         /// Passes through the database driver required for interaction with the database
         /// </summary>
         /// <param name="owner"></param>
-        public PamaxieUserDataInteraction(PamaxieDatabaseDriver owner) : base(owner)
+        public PamaxieApplicationDataInteraction(PamaxieDatabaseDriver owner) : base(owner)
         {
             _owner = owner;
         }
 
-        /// <inheritdoc cref="IPamaxieUserDataInteraction.GetAllApplications(PamaxieUser)"/>
-        public IEnumerable<PamaxieApplication> GetAllApplications(PamaxieUser value)
+        /// <inheritdoc/>
+        public PamaxieApplication EnableOrDisable(PamaxieApplication value)
         {
             if (_owner == null)
             {
@@ -58,37 +48,15 @@ namespace Pamaxie.Database.Redis.DataInteraction
                 throw new ArgumentException("A data entry with the specified value could not be found.");
             }
 
-            IEnumerable<string> applicationKeys = value.ApplicationKeys;
-            if (applicationKeys == null)
-            {
-                return null;
-            }
+            value.Disabled = !value.Disabled;
 
-            List<PamaxieApplication> applications = new List<PamaxieApplication>();
-
-            foreach (string applicationKey in applicationKeys)
-            {
-                RedisValue rawData = db.StringGet(applicationKey);
-
-                if (!string.IsNullOrWhiteSpace(rawData))
-                {
-                    PamaxieApplication application = JsonConvert.DeserializeObject<PamaxieApplication>(rawData);
-
-                    if (application != null)
-                    {
-                        if (application.OwnerKey == value.UniqueKey)
-                        {
-                            applications.Add(application);
-                        }
-                    }
-                }
-            }
-
-            return applications.AsEnumerable();
+            string data = JsonConvert.SerializeObject(value);
+            db.StringSet(value.UniqueKey, data);
+            return value;
         }
 
-        /// <inheritdoc cref="IPamaxieUserDataInteraction.VerifyEmail(PamaxieUser)"/>
-        public bool VerifyEmail(PamaxieUser value)
+        /// <inheritdoc/>
+        public PamaxieUser GetOwner(PamaxieApplication value)
         {
             if (_owner == null)
             {
@@ -115,14 +83,17 @@ namespace Pamaxie.Database.Redis.DataInteraction
 
             if (!db.KeyExists(value.UniqueKey))
             {
-                return false;
+                throw new ArgumentException("A data entry with the specified value could not be found.");
             }
 
-            value.EmailVerified = true;
+            RedisValue rawData = db.StringGet(value.OwnerKey);
+            return string.IsNullOrWhiteSpace(rawData) ? default : JsonConvert.DeserializeObject<PamaxieUser>(rawData);
+        }
 
-            string data = JsonConvert.SerializeObject(value);
-            db.StringSet(value.UniqueKey, data);
-            return true;
+        /// <inheritdoc/>
+        public bool VerifyAuthentication(PamaxieApplication value)
+        {
+            throw new NotSupportedException("This method has not been implemented yet, and therefore can't be supported on this API yet.");
         }
     }
 }

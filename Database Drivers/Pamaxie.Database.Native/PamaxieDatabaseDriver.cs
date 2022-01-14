@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 namespace Pamaxie.Database.Redis
 {
     /// <summary>
-    /// Database Driver for interacting with Pamaxie and Redis, 
-    /// this usually shouldn't be called directly but much rather be used through assembly reflection.
+    /// Database driver we use for Pamaxie. Please contact us if you want to setup your own
+    /// instances and require your own DB driver. We do not currently support that scenario.
     /// <inheritdoc/>
     /// </summary>
     public sealed class PamaxieDatabaseDriver : IPamaxieDatabaseDriver
@@ -22,7 +22,7 @@ namespace Pamaxie.Database.Redis
         }
 
         /// <inheritdoc cref="IPamaxieDatabaseDriver.DatabaseTypeName"/>
-        public string DatabaseTypeName => "[Included] Redis";
+        public string DatabaseTypeName => "Native";
 
         /// <inheritdoc cref="IPamaxieDatabaseDriver.DatabaseTypeGuid"/>
         public Guid DatabaseTypeGuid { get; }

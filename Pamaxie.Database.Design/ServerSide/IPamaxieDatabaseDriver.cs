@@ -9,12 +9,12 @@ namespace Pamaxie.Database.Design
     public interface IPamaxieDatabaseDriver
     {
         /// <summary>
-        /// Name for the type of database that is used
+        /// Friendly name for the database driver
         /// </summary>
         string DatabaseTypeName { get; }
 
         /// <summary>
-        /// Unique Identifier for distincting between types of the same name
+        /// Unique Guid to differentiate between Databases
         /// </summary>
         Guid DatabaseTypeGuid { get; }
 

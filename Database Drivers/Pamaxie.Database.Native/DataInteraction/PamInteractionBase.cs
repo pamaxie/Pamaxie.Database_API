@@ -1,17 +1,12 @@
 ﻿using Newtonsoft.Json;
-using Pamaxie.Data;
 using Pamaxie.Database.Design;
 using StackExchange.Redis;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pamaxie.Database.Redis.DataInteraction
 {
-    internal class PamaxieDataInteractionBase<T>  : IPamaxieDataInteractionBase<T> where T : IDatabaseObject
+    internal class PamInteractionBase<T>  : IPamInteractionBase<T> where T : IDatabaseObject
     {
         /// <summary>
         /// Used for accessing the Redis database
@@ -22,12 +17,12 @@ namespace Pamaxie.Database.Redis.DataInteraction
         /// Called upon creating the database service
         /// </summary>
         /// <param name="config"></param>
-        public PamaxieDataInteractionBase(PamaxieDatabaseDriver config)
+        public PamInteractionBase(PamaxieDatabaseDriver config)
         {
             _owner = config;
         }
 
-        /// <inheritdoc cref="IPamaxieDataInteractionBase{T}.Get(string)"/>
+        /// <inheritdoc cref="IPamInteractionBase{T}.Get(string)"/>
         public T Get(string uniqueKey)
         {
             if (_owner == null)
@@ -51,7 +46,7 @@ namespace Pamaxie.Database.Redis.DataInteraction
             return string.IsNullOrWhiteSpace(rawData) ? default : JsonConvert.DeserializeObject<T>(rawData);
         }
 
-        /// <inheritdoc cref="IPamaxieDataInteractionBase{T}.Create(T)"/>
+        /// <inheritdoc cref="IPamInteractionBase{T}.Create(T)"/>
         public T Create(T data)
         {
             if (_owner == null)
@@ -101,7 +96,7 @@ namespace Pamaxie.Database.Redis.DataInteraction
             return data;
         }
 
-        /// <inheritdoc cref="IPamaxieDataInteractionBase{T}.TryCreate(T, out T)"/>
+        /// <inheritdoc cref="IPamInteractionBase{T}.TryCreate(T, out T)"/>
         public bool TryCreate(T data, out T createdItem)
         {
    
@@ -155,7 +150,7 @@ namespace Pamaxie.Database.Redis.DataInteraction
             return true;
         }
 
-        /// <inheritdoc cref="IPamaxieDataInteractionBase{T}.Update(T)"/>
+        /// <inheritdoc cref="IPamInteractionBase{T}.Update(T)"/>
         public T Update(T data)
         {
             if (_owner == null)
@@ -202,7 +197,7 @@ namespace Pamaxie.Database.Redis.DataInteraction
             return data;
         }
 
-        /// <inheritdoc cref="IPamaxieDataInteractionBase{T}.TryUpdate(T, out T)"/>
+        /// <inheritdoc cref="IPamInteractionBase{T}.TryUpdate(T, out T)"/>
         public bool TryUpdate(T data, out T updatedItem)
         {
             if (_owner == null)
@@ -256,7 +251,7 @@ namespace Pamaxie.Database.Redis.DataInteraction
             return true;
         }
 
-        /// <inheritdoc cref="IPamaxieDataInteractionBase{T}.UpdateOrCreate(T, out T)"/>
+        /// <inheritdoc cref="IPamInteractionBase{T}.UpdateOrCreate(T, out T)"/>
         public bool UpdateOrCreate(T data, out T updatedOrCreatedItem)
         {
             if (_owner == null)
@@ -306,7 +301,7 @@ namespace Pamaxie.Database.Redis.DataInteraction
             return createdNew;
         }
 
-        /// <inheritdoc cref="IPamaxieDataInteractionBase{T}.Delete(T)"/>C
+        /// <inheritdoc cref="IPamInteractionBase{T}.Delete(T)"/>C
         public bool Delete(T data)
         {
             if (_owner == null)
@@ -340,7 +335,7 @@ namespace Pamaxie.Database.Redis.DataInteraction
             return db.KeyDelete(data.UniqueKey);
         }
 
-        /// <inheritdoc cref="IPamaxieDataInteractionBase{T}.Exists(string)"/>
+        /// <inheritdoc cref="IPamInteractionBase{T}.Exists(string)"/>
         public bool Exists(string uniqueKey)
         {
             if (_owner == null)

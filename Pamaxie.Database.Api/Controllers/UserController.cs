@@ -36,11 +36,11 @@ namespace Pamaxie.Api.Controllers
         /// <returns>A <see cref="PamaxieUser"/> from the database</returns>
         [Authorize]
         [HttpGet("Get={key}")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PamaxieUser))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IPamUser))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieUser> GetTask(string key)
+        public ActionResult<IPamUser> GetTask(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
             {
@@ -68,10 +68,10 @@ namespace Pamaxie.Api.Controllers
         [Authorize]
         [HttpPost("Create")]
         [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(PamaxieUser))]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(IPamUser))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieUser> CreateTask(PamaxieUser user)
+        public ActionResult<IPamUser> CreateTask(IPamUser user)
         {
             return NotFound("This endpoint is not avialable for this data type, please use the Auth Controller to create a user.");
         }
@@ -84,10 +84,10 @@ namespace Pamaxie.Api.Controllers
         [Authorize]
         [HttpPost("TryCreate")]
         [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(PamaxieUser))]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(IPamUser))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieUser> TryCreateTask(PamaxieUser user)
+        public ActionResult<IPamUser> TryCreateTask(IPamUser user)
         {
             return NotFound("This endpoint is not avialable for this data type");
         }
@@ -103,7 +103,7 @@ namespace Pamaxie.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PamaxieUser))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieUser> UpdateTask(PamaxieUser user)
+        public ActionResult<IPamUser> UpdateTask(IPamUser user)
         {
             if (user == null)
             {
@@ -136,10 +136,10 @@ namespace Pamaxie.Api.Controllers
         [Authorize]
         [HttpPut("TryUpdate")]
         [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PamaxieUser))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IPamUser))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieUser> TryUpdateTask(PamaxieUser user)
+        public ActionResult<IPamUser> TryUpdateTask(IPamUser user)
         {
             if (user == null)
             {
@@ -173,11 +173,11 @@ namespace Pamaxie.Api.Controllers
         [Authorize]
         [HttpPost("UpdateOrCreate")]
         [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PamaxieUser))]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(PamaxieUser))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IPamUser))]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(IPamUser))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieUser> UpdateOrCreateTask(PamaxieUser user)
+        public ActionResult<IPamUser> UpdateOrCreateTask(IPamUser user)
         {
             return NotFound("This endpoint is not avialable for this data type");
         }
@@ -220,7 +220,7 @@ namespace Pamaxie.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<bool> DeleteTask(PamaxieUser user)
+        public ActionResult<bool> DeleteTask(IPamUser user)
         {
             if (user == null)
             {
@@ -258,10 +258,10 @@ namespace Pamaxie.Api.Controllers
         [Authorize]
         [HttpGet("GetAllApplications={userId}")]
 
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PamaxieApplication>))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<IPamUser>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<IEnumerable<PamaxieApplication>> GetAllApplicationsTask(string userId)
+        public ActionResult<IEnumerable<IPamUser>> GetAllApplicationsTask(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId))
             {

@@ -1,14 +1,9 @@
 ﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Pamaxie.Database.Design;
 using Pamaxie.Database.Extensions.ServerSide;
 using Spectre.Console;
 using StackExchange.Redis;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Pamaxie.Database.Redis
 {
@@ -40,7 +35,7 @@ namespace Pamaxie.Database.Redis
 @"Hello and welcome, this is the Redis database setup guide.
 We will guide you through the installation with ease.
 Please ensure all configurations are setup correctly otherwise connecting to the database might not work.
-If you make a mistake you will be able to corrrect it at the end of the setup. So no worries!");
+If you make a mistake you will be able to correct it at the end of the setup. So no worries!");
             ConfigurationOptions options = new ConfigurationOptions();
             GenerateSentinelOptions(options);
             GenerateClientNameOptions(options);

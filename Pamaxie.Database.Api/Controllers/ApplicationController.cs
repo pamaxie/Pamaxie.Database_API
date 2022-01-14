@@ -11,7 +11,7 @@ using Pamaxie.Database.Design;
 namespace Pamaxie.Api.Controllers
 {
     /// <summary>
-    /// Api Controller for handling all <see cref="PamaxieApplication"/> interactions
+    /// Api Controller for handling all <see cref="IPamProject"/> interactions
     /// </summary>
     [Authorize]
     [ApiController]
@@ -31,17 +31,17 @@ namespace Pamaxie.Api.Controllers
         }
 
         /// <summary>
-        /// Gets a <see cref="PamaxieApplication"/> from the database by a key
+        /// Gets a <see cref="IPamProject"/> from the database by a key
         /// </summary>
-        /// <param name="applicationId">Unique UniqueKey of the <see cref="PamaxieApplication"/></param>
-        /// <returns>A <see cref="PamaxieApplication"/> from the database</returns>
+        /// <param name="applicationId">Unique UniqueKey of the <see cref="IPamProject"/></param>
+        /// <returns>A <see cref="IPamProject"/> from the database</returns>
         [Authorize]
         [HttpGet("Get={key}")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PamaxieApplication))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IPamProject))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieApplication> GetTask(string applicationId)
+        public ActionResult<IPamProject> GetTask(string applicationId)
         {
 
             if (string.IsNullOrWhiteSpace(applicationId))
@@ -68,17 +68,17 @@ namespace Pamaxie.Api.Controllers
         }
 
         /// <summary>
-        /// Creates a new <see cref="PamaxieApplication"/> in the database
+        /// Creates a new <see cref="IPamProject"/> in the database
         /// </summary>
-        /// <param name="application">The <see cref="PamaxieApplication"/> to be created</param>
-        /// <returns>Created <see cref="PamaxieApplication"/></returns>
+        /// <param name="application">The <see cref="IPamProject"/> to be created</param>
+        /// <returns>Created <see cref="IPamProject"/></returns>
         [Authorize]
         [HttpPost("Create")]
         [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(PamaxieApplication))]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(IPamProject))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieApplication> CreateTask(PamaxieApplication application)
+        public ActionResult<IPamProject> CreateTask(IPamProject application)
         {
             if (application == null)
             {
@@ -113,7 +113,7 @@ namespace Pamaxie.Api.Controllers
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(PamaxieApplication))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieApplication> TryCreateTask(PamaxieApplication application)
+        public ActionResult<IPamProject> TryCreateTask(IPamProject application)
         {
             if (application == null)
             {
@@ -153,7 +153,7 @@ namespace Pamaxie.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PamaxieApplication))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieApplication> UpdateTask(PamaxieApplication application)
+        public ActionResult<IPamProject> UpdateTask(IPamProject application)
         {
             if (application == null)
             {
@@ -184,7 +184,7 @@ namespace Pamaxie.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PamaxieApplication))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieApplication> TryUpdateTask(PamaxieApplication application)
+        public ActionResult<IPamProject> TryUpdateTask(IPamProject application)
         {
             if (application == null)
             {
@@ -210,20 +210,20 @@ namespace Pamaxie.Api.Controllers
         }
 
         /// <summary>
-        /// Tries to update a <see cref="PamaxieApplication"/> in the database,
-        /// if the <see cref="PamaxieApplication"/> does not exist, then a new one will be created. 
+        /// Tries to update a <see cref="IPamProject"/> in the database,
+        /// if the <see cref="IPamProject"/> does not exist, then a new one will be created. 
         /// This requires the UniqueKey of the application to be not set. Otherwise you will get an authentication error.
         /// </summary>
-        /// <param name="application">The <see cref="PamaxieApplication"/> to be created, or updated values on <see cref="PamaxieApplication"/></param>
-        /// <returns>Updated or created <see cref="PamaxieApplication"/></returns>
+        /// <param name="application">The <see cref="IPamProject"/> to be created, or updated values on <see cref="IPamProject"/></param>
+        /// <returns>Updated or created <see cref="IPamProject"/></returns>
         [Authorize]
         [HttpPost("UpdateOrCreate")]
         [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PamaxieApplication))]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(PamaxieApplication))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IPamProject))]
+        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(IPamProject))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieApplication> UpdateOrCreateTask(PamaxieApplication application)
+        public ActionResult<IPamProject> UpdateOrCreateTask(IPamProject application)
         {
             if (application == null)
             {
@@ -259,10 +259,10 @@ namespace Pamaxie.Api.Controllers
         }
 
         /// <summary>
-        /// Checks if a <see cref="PamaxieApplication"/> exists in the database
+        /// Checks if a <see cref="IPamProject"/> exists in the database
         /// </summary>
-        /// <param name="applicationId">Unique UniqueKey of the <see cref="PamaxieApplication"/></param>
-        /// <returns><see cref="bool"/> if <see cref="PamaxieApplication"/> exists in the database</returns>
+        /// <param name="applicationId">Unique UniqueKey of the <see cref="IPamProject"/></param>
+        /// <returns><see cref="bool"/> if <see cref="IPamProject"/> exists in the database</returns>
         [Authorize]
         [HttpGet("Exists={key}")]
         [Consumes(MediaTypeNames.Application.Json)]
@@ -334,17 +334,17 @@ namespace Pamaxie.Api.Controllers
         }
 
         /// <summary>
-        /// Gets the owner from a <see cref="PamaxieApplication"/>
+        /// Gets the owner from a <see cref="IPamProject"/>
         /// </summary>
-        /// <param name="application">The <see cref="PamaxieApplication"/> to get owner from</param>
-        /// <returns>The owner of the <see cref="PamaxieApplication"/></returns>
+        /// <param name="application">The <see cref="IPamProject"/> to get owner from</param>
+        /// <returns>The owner of the <see cref="IPamProject"/></returns>
         [Authorize]
         [HttpGet("GetOwner")]
         [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PamaxieUser))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IPamUser))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieUser> GetOwner(PamaxieApplication application)
+        public ActionResult<IPamUser> GetOwner(IPamProject application)
         {
             if (application == null)
             {
@@ -365,17 +365,17 @@ namespace Pamaxie.Api.Controllers
         }
 
         /// <summary>
-        /// Enables or disables the <see cref="PamaxieApplication"/> 
+        /// Enables or disables the <see cref="IPamProject"/> 
         /// </summary>
         /// <param name="applicationId">Id of the application that should be enabled or disabled</param>
-        /// <returns>Enabled or disabled <see cref="PamaxieApplication"/></returns>
+        /// <returns>Enabled or disabled <see cref="IPamProject"/></returns>
         [Authorize]
         [HttpPut("EnableOrDisable")]
         [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PamaxieApplication))]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IPamProject))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<PamaxieApplication> EnableOrDisableTask(string applicationId)
+        public ActionResult<IPamProject> EnableOrDisableTask(string applicationId)
         {
             if (applicationId == null)
             {
@@ -413,7 +413,7 @@ namespace Pamaxie.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<bool> VerifyAuthenticationTask(PamaxieApplication application)
+        public ActionResult<bool> VerifyAuthenticationTask(IPamProject application)
         {
             if (application == null)
             {

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Pamaxie.Database.Extensions
 {
-    public class DbDriverManager
+    public static class DbDriverManager
     {
         public static IEnumerable<IPamaxieDatabaseDriver> LoadDatabaseDrivers()
         {

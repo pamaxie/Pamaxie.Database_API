@@ -3,14 +3,14 @@
     public interface IPamaxieDatabaseService
     {
         /// <summary>
-        /// Service for accessing pamaxies application data
+        /// Service for accessing Pamaxie's application data
         /// </summary>
-        IPamaxieApplicationDataInteraction PamaxieApplicationData { get; }
+        IPamProjectInteraction PamaxieApplicationData { get; }
 
         /// <summary>
-        /// Service for accessing pamaxies user data
+        /// Service for accessing Pamaxie's user data
         /// </summary>
-        IPamaxieUserDataInteraction PamaxieUserData { get; }
+        IPamUserInteraction PamaxieUserData { get; }
 
         /// <summary>
         /// Validates the connection to the database with the reached in database context

@@ -1,13 +1,9 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Pamaxie.Authentication;
 using Pamaxie.Database.Extensions;
-using Pamaxie.Database.Extensions.ServerSide;
-using Pamaxie.Helpers;
 using Spectre.Console;
 using System;
-using System.IO;
 using System.Linq;
 
 namespace Pamaxie.Database.Api

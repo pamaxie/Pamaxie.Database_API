@@ -4,10 +4,10 @@ using System;
 namespace Pamaxie.Database.Design
 {
     /// <summary>
-    /// Defines how interactions with idividual items in a database should be done
+    /// Defines how interactions with individual items in a database should be done
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IPamaxieDataInteractionBase<T> where T : IDatabaseObject
+    public interface IPamInteractionBase<T>
     {
         /// <summary>
         /// Gets a <see cref="T"/> value from the service
@@ -56,7 +56,7 @@ namespace Pamaxie.Database.Design
         /// <param name="data">The <see cref="T"/> value that should be updated or created in the service</param>
         /// <param name="updatedOrCreatedItem">The updated or created <see cref="T"/> value of the service</param>
         /// <returns><see cref="bool"/> if a new value was created</returns>
-        /// <exception cref="ArgumentException">if <see cref="value"/> did not contain a valid key</exception>
+        /// <exception cref="ArgumentException">if <see cref="data"/> did not contain a valid key</exception>
         public bool UpdateOrCreate(T data, out T updatedOrCreatedItem);
 
         /// <summary>

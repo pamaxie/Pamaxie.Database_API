@@ -44,4 +44,8 @@
     <ProjectReference Include="..\Pamaxie.Database.Design\Pamaxie.Database.Design.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers" />
+  </ItemGroup>
+
 </Project>

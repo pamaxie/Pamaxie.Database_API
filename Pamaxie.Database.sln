@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pamaxie.Database.Design", "
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database Drivers", "Database Drivers", "{1B9E48F3-C9C1-42C4-8219-6C9EC7859B9F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pamaxie.Database.Redis", "Database Drivers\Pamaxie.Database.Redis\Pamaxie.Database.Redis.csproj", "{34D0F08C-F9DA-4CAF-9A79-6928688E7D3C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pamaxie.Database.Native", "Database Drivers\Pamaxie.Database.Native\Pamaxie.Database.Native.csproj", "{34D0F08C-F9DA-4CAF-9A79-6928688E7D3C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
