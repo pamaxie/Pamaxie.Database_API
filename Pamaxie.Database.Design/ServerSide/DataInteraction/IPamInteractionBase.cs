@@ -7,7 +7,7 @@ namespace Pamaxie.Database.Design
     /// Defines how interactions with individual items in a database should be done
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IPamInteractionBase<T>
+    public interface IPamInteractionBase<T> where T : IPamDbObject
     {
         /// <summary>
         /// Gets a <see cref="T"/> value from the service

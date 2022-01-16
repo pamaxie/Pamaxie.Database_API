@@ -70,7 +70,7 @@ namespace Pamaxie.Api.Controllers
             var userName = usernamePassword.Substring(0, seperatorIndex);
             var userPass = usernamePassword.Substring(seperatorIndex + 1);
             var userId = PamaxieCryptoHelpers.GetUserId(new System.Net.NetworkCredential(userName, userPass));
-            var user = _dbDriver.Service.PamaxieUserData.Get(userId);
+            var user = _dbDriver.Service.Users.Get(userId);
 
             if (user == null)
             {
@@ -115,12 +115,12 @@ namespace Pamaxie.Api.Controllers
             user.Disabled = false;
             user.TTL = DateTime.MaxValue;
 
-            if (_dbDriver.Service.PamaxieUserData.Exists(user.UniqueKey))
+            if (_dbDriver.Service.Users.Exists(user.UniqueKey))
             {
                 return BadRequest("The specified user already exists in the database");
             }
 
-            _dbDriver.Service.PamaxieUserData.Create(user);
+            _dbDriver.Service.Users.Create(user);
             return Created(String.Empty, null);
         }
 
@@ -147,7 +147,7 @@ namespace Pamaxie.Api.Controllers
             string userId = JwtTokenGenerator.GetUserKey(token);
 
             //Validate if the user was maybe deleted since the last auth
-            if (!_dbDriver.Service.PamaxieUserData.Exists(userId))
+            if (!_dbDriver.Service.Users.Exists(userId))
             {
                 return Unauthorized();
             }

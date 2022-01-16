@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Database Drivers", "Databas
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pamaxie.Database.Native", "Database Drivers\Pamaxie.Database.Native\Pamaxie.Database.Native.csproj", "{34D0F08C-F9DA-4CAF-9A79-6928688E7D3C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Pamaxie.Database.Native", "Database Drivers\Test.Pamaxie.Database.Native\Test.Pamaxie.Database.Native.csproj", "{682CE1FF-6954-41B7-A22A-E3E76D5E45EF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Apply Migrations|Any CPU = Apply Migrations|Any CPU
@@ -43,12 +45,21 @@ Global
 		{34D0F08C-F9DA-4CAF-9A79-6928688E7D3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34D0F08C-F9DA-4CAF-9A79-6928688E7D3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{34D0F08C-F9DA-4CAF-9A79-6928688E7D3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{682CE1FF-6954-41B7-A22A-E3E76D5E45EF}.Apply Migrations|Any CPU.ActiveCfg = Debug|Any CPU
+		{682CE1FF-6954-41B7-A22A-E3E76D5E45EF}.Apply Migrations|Any CPU.Build.0 = Debug|Any CPU
+		{682CE1FF-6954-41B7-A22A-E3E76D5E45EF}.Blazor Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{682CE1FF-6954-41B7-A22A-E3E76D5E45EF}.Blazor Release|Any CPU.Build.0 = Debug|Any CPU
+		{682CE1FF-6954-41B7-A22A-E3E76D5E45EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{682CE1FF-6954-41B7-A22A-E3E76D5E45EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{682CE1FF-6954-41B7-A22A-E3E76D5E45EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{682CE1FF-6954-41B7-A22A-E3E76D5E45EF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{34D0F08C-F9DA-4CAF-9A79-6928688E7D3C} = {1B9E48F3-C9C1-42C4-8219-6C9EC7859B9F}
+		{682CE1FF-6954-41B7-A22A-E3E76D5E45EF} = {1B9E48F3-C9C1-42C4-8219-6C9EC7859B9F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {52DAFAB8-3270-4409-B685-1DA2DC8C25CD}

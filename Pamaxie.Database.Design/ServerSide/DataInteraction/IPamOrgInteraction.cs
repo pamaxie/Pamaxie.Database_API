@@ -3,7 +3,7 @@ using Pamaxie.Database.Design;
 
 namespace Pamaxie.Database.Extensions.ServerSide;
 
-public interface IPamOrgInteraction : IPamInteractionBase<IPamOrg>
+public interface IPamOrgInteraction : IPamInteractionBase<IPamDbObject>
 {
     /// <summary>
     /// Loads see <see cref="IPamOrg.Owner"/> property completely

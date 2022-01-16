@@ -59,12 +59,12 @@ namespace Pamaxie.Api.Controllers
                 return Unauthorized();
             }
 
-            if (!_dbDriver.Service.PamaxieApplicationData.Exists(applicationId))
+            if (_dbDriver.Service.Projects.Exists(applicationId))
             {
                 return NotFound();
             }
-
-            return Ok(_dbDriver.Service.PamaxieApplicationData.Get(applicationId));
+            
+            return Ok(_dbDriver.Service.Projects.Get(applicationId));
         }
 
         /// <summary>
@@ -80,26 +80,7 @@ namespace Pamaxie.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<IPamProject> CreateTask(IPamProject application)
         {
-            if (application == null)
-            {
-                return BadRequest();
-            }
-
-            if (string.IsNullOrEmpty(application.OwnerKey))
-            {
-                return BadRequest();
-            }
-
-
-            string token = Request.Headers["authorization"];
-            string userId = JwtTokenGenerator.GetUserKey(token);
-
-            if (application.OwnerKey != userId)
-            {
-                return BadRequest();
-            }
-
-            return Created("", _dbDriver.Service.PamaxieApplicationData.Create(application));
+            
         }
 
         /// <summary>
@@ -115,31 +96,7 @@ namespace Pamaxie.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<IPamProject> TryCreateTask(IPamProject application)
         {
-            if (application == null)
-            {
-                return BadRequest();
-            }
-
-            if (string.IsNullOrEmpty(application.OwnerKey))
-            {
-                return BadRequest();
-            }
-
-
-            string token = Request.Headers["authorization"];
-            string userId = JwtTokenGenerator.GetUserKey(token);
-
-            if (application.OwnerKey != userId)
-            {
-                return BadRequest();
-            }
-
-            if (_dbDriver.Service.PamaxieApplicationData.TryCreate(application, out PamaxieApplication createdApplication))
-            {
-                return Created("", createdApplication);
-            }
-
-            return Problem();
+            
         }
 
         /// <summary>
@@ -155,22 +112,7 @@ namespace Pamaxie.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<IPamProject> UpdateTask(IPamProject application)
         {
-            if (application == null)
-            {
-                return BadRequest();
-            }
-
-            if (string.IsNullOrEmpty(application.UniqueKey) || string.IsNullOrEmpty(application.OwnerKey))
-            {
-                return BadRequest();
-            }
-
-            if (!ValidateOwnership(application.UniqueKey))
-            {
-                return Unauthorized();
-            }
-
-            return Ok(_dbDriver.Service.PamaxieApplicationData.Update(application));
+            
         }
 
         /// <summary>
@@ -186,27 +128,7 @@ namespace Pamaxie.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<IPamProject> TryUpdateTask(IPamProject application)
         {
-            if (application == null)
-            {
-                return BadRequest();
-            }
-
-            if (string.IsNullOrEmpty(application.UniqueKey) || string.IsNullOrEmpty(application.OwnerKey))
-            {
-                return BadRequest();
-            }
-
-            if (!ValidateOwnership(application.UniqueKey))
-            {
-                return Unauthorized();
-            }
-
-            if (_dbDriver.Service.PamaxieApplicationData.TryUpdate(application, out PamaxieApplication updatedApplication))
-            {
-                return Ok(updatedApplication);
-            }
-
-            return Problem();
+            
         }
 
         /// <summary>
@@ -225,37 +147,7 @@ namespace Pamaxie.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public ActionResult<IPamProject> UpdateOrCreateTask(IPamProject application)
         {
-            if (application == null)
-            {
-                return BadRequest();
-            }
-
-            if (string.IsNullOrEmpty(application.OwnerKey))
-            {
-                return BadRequest();
-            }
-
-            if (string.IsNullOrEmpty(application.UniqueKey))
-            {
-                string token = Request.Headers["authorization"];
-                string userId = JwtTokenGenerator.GetUserKey(token);
-
-                if (application.OwnerKey != userId)
-                {
-                    return BadRequest();
-                }
-            }
-            else
-            {
-                ValidateOwnership(application.UniqueKey);
-            }
-
-            if (_dbDriver.Service.PamaxieApplicationData.UpdateOrCreate(application, out PamaxieApplication updatedOrCreatedApplication))
-            {
-                return Created("", updatedOrCreatedApplication);
-            }
-
-            return Ok(updatedOrCreatedApplication);
+            
         }
 
         /// <summary>

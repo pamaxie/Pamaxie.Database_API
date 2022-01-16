@@ -6,7 +6,7 @@ namespace Pamaxie.Database.Design
     /// <summary>
     /// Interface that defines User interactions
     /// </summary>
-    public interface IPamUserInteraction : IPamInteractionBase<IPamUser>
+    public interface IPamUserInteraction : IPamInteractionBase<IPamDbObject>
     {
         /// <summary>
         /// Loads the <see cref="IPamUser.Projects"/> property

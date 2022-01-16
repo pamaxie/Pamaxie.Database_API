@@ -1,17 +1,30 @@
-﻿namespace Pamaxie.Database.Design
+﻿using Pamaxie.Data;
+using Pamaxie.Database.Extensions.ServerSide;
+
+namespace Pamaxie.Database.Design
 {
     public interface IPamaxieDatabaseService
     {
         /// <summary>
         /// Service for accessing Pamaxie's application data
         /// </summary>
-        IPamProjectInteraction PamaxieApplicationData { get; }
+        IPamProjectInteraction Projects { get; }
 
         /// <summary>
         /// Service for accessing Pamaxie's user data
         /// </summary>
-        IPamUserInteraction PamaxieUserData { get; }
+        IPamUserInteraction Users { get; }
+        
+        /// <summary>
+        /// Service for accessing Pamaxie's organizations (multiple users working on projects)
+        /// </summary>
+        IPamOrgInteraction Orgs { get; }
 
+        /// <summary>
+        /// Service for accessing scan results from Pamaxie's api
+        /// </summary>
+        IPamScanInteraction Scans { get; }
+        
         /// <summary>
         /// Validates the connection to the database with the reached in database context
         /// </summary>

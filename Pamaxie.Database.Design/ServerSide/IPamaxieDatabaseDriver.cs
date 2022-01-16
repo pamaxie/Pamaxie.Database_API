@@ -1,4 +1,5 @@
 ﻿using System;
+using Pamaxie.Data;
 
 namespace Pamaxie.Database.Design
 {

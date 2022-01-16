@@ -5,7 +5,7 @@ namespace Pamaxie.Database.Design
     /// <summary>
     /// Interface that defines Application interactions
     /// </summary>
-    public interface IPamProjectInteraction : IPamInteractionBase<IPamProject>
+    public interface IPamProjectInteraction : IPamInteractionBase<IPamDbObject>
     {
         /// <summary>
         /// Loads the <see cref="IPamProject.Owner"/> Property of the reached in <see cref="item"/>
