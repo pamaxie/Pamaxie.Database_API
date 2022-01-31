@@ -1,11 +1,11 @@
 ﻿using Pamaxie.Data;
 
-namespace Pamaxie.Database.Design
+namespace Pamaxie.Database.Extensions.DataInteraction
 {
     /// <summary>
     /// Interface that defines Application interactions
     /// </summary>
-    public interface IPamProjectInteraction : IPamInteractionBase<IPamDbObject>
+    public interface IPamProjectInteraction : IPamInteractionBase<IPamSqlObject>
     {
         /// <summary>
         /// Loads the <see cref="IPamProject.Owner"/> Property of the reached in <see cref="item"/>

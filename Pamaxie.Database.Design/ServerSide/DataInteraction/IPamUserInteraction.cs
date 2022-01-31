@@ -1,12 +1,11 @@
-﻿using System.Collections.Generic;
-using Pamaxie.Data;
+﻿using Pamaxie.Data;
 
-namespace Pamaxie.Database.Design
+namespace Pamaxie.Database.Extensions.DataInteraction
 {
     /// <summary>
     /// Interface that defines User interactions
     /// </summary>
-    public interface IPamUserInteraction : IPamInteractionBase<IPamDbObject>
+    public interface IPamUserInteraction : IPamInteractionBase<IPamSqlObject>
     {
         /// <summary>
         /// Loads the <see cref="IPamUser.Projects"/> property

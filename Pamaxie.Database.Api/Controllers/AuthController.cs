@@ -8,7 +8,6 @@ using Newtonsoft.Json.Linq;
 using Pamaxie.Authentication;
 using Pamaxie.Data;
 using Pamaxie.Database.Api;
-using Pamaxie.Database.Design;
 using Pamaxie.Helpers;
 using System;
 using System.IO;
@@ -16,7 +15,7 @@ using System.Linq;
 using System.Net.Mime;
 using System.Text;
 using System.Threading.Tasks;
-
+/*
 namespace Pamaxie.Api.Controllers
 {
     /// <summary>
@@ -156,4 +155,4 @@ namespace Pamaxie.Api.Controllers
             return Ok(newToken);
         }
     }
-}
+}*/

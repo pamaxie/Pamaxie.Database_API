@@ -1,11 +1,11 @@
 using Pamaxie.Data;
-using Pamaxie.Database.Design;
-namespace Pamaxie.Database.Extensions.ServerSide;
+
+namespace Pamaxie.Database.Extensions.DataInteraction;
 
 /// <summary>
 /// Interface for managing scan results of data
 /// </summary>
-public interface IPamScanInteraction : IPamInteractionBase<IPamDbObject>
+public interface IPamScanInteraction : IPamInteractionBase<IPamSqlObject>
 {
     
 }

@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Pamaxie.Data" Version="6.3.2" />
+    <PackageReference Include="Pamaxie.Data" Version="6.3.5" />
     <PackageReference Include="Pamaxie.Helpers" Version="6.0.0" />
   </ItemGroup>
 

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Pamaxie.Database.Extensions.ServerSide
+namespace Pamaxie.Database.Extensions
 {
     /// <summary>
     /// This is the public object that stores the database settings for each database

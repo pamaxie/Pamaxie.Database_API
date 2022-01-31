@@ -12,8 +12,6 @@ using Newtonsoft.Json.Linq;
 using Pamaxie.Authentication;
 using Pamaxie.Database.Api;
 using Pamaxie.Database.Extensions;
-using Pamaxie.Database.Extensions.ServerSide;
-
 using StackExchange.Redis;
 
 namespace Pamaxie.Api

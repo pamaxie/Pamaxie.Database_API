@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Pamaxie.Authentication;
 using Pamaxie.Data;
-using Pamaxie.Database.Design;
 
+/*
 namespace Pamaxie.Api.Controllers
 {
     /// <summary>
@@ -332,4 +332,4 @@ namespace Pamaxie.Api.Controllers
             return assumedUserId == userId;
         }
     }
-}
+}*/

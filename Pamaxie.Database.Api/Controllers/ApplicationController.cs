@@ -5,9 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Pamaxie.Authentication;
 using Pamaxie.Data;
-using Pamaxie.Database.Design;
 
-
+/*
 namespace Pamaxie.Api.Controllers
 {
     /// <summary>
@@ -354,4 +353,4 @@ namespace Pamaxie.Api.Controllers
             return application.OwnerKey == userId;
         }
     }
-}
+}*/

@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Pamaxie.Database.Design
+namespace Pamaxie.Database.Extensions
 {
     /// <summary>
     /// This defines how the database config should be handled. <see cref="GenerateConfig"/> requires some special attention, so the json that comes out of it can be parsed by our services.
@@ -12,6 +8,17 @@ namespace Pamaxie.Database.Design
     /// </summary>
     public interface IPamaxieDatabaseConfiguration
     {
+        /// <summary>
+        /// Configuration of the primary database
+        /// </summary>
+        public string Db1Config { get; }
+        
+        /// <summary>
+        /// Configuration of the secondary database (optional db that can be used to separate data on a second database type)
+        /// Mostly used for us to store Redis configurations vs PgSql configs
+        /// </summary>
+        public string Db2Config { get; }
+        
         /// <summary>
         /// Guid of the database driver. This shouldn't be changed once set
         /// </summary>

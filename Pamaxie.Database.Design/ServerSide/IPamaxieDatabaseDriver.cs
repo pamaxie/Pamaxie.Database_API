@@ -1,7 +1,6 @@
 ﻿using System;
-using Pamaxie.Data;
 
-namespace Pamaxie.Database.Design
+namespace Pamaxie.Database.Extensions
 {
     /// <summary>
     /// Service responsible for handling interaction with the database or database api. This automatically detects

@@ -1,9 +1,8 @@
 ﻿using Pamaxie.Data;
-using Pamaxie.Database.Design;
 
-namespace Pamaxie.Database.Extensions.ServerSide;
+namespace Pamaxie.Database.Extensions.DataInteraction;
 
-public interface IPamOrgInteraction : IPamInteractionBase<IPamDbObject>
+public interface IPamOrgInteraction : IPamInteractionBase<IPamSqlObject>
 {
     /// <summary>
     /// Loads see <see cref="IPamOrg.Owner"/> property completely

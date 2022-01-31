@@ -1,13 +1,13 @@
-﻿using Pamaxie.Data;
-using System;
+﻿using System;
+using Pamaxie.Data;
 
-namespace Pamaxie.Database.Design
+namespace Pamaxie.Database.Extensions.DataInteraction
 {
     /// <summary>
     /// Defines how interactions with individual items in a database should be done
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IPamInteractionBase<T> where T : IPamDbObject
+    public interface IPamInteractionBase<T> where T : class
     {
         /// <summary>
         /// Gets a <see cref="T"/> value from the service

@@ -1,10 +1,22 @@
-﻿using Pamaxie.Data;
-using Pamaxie.Database.Extensions.ServerSide;
+﻿using System.Threading.Tasks;
+using Pamaxie.Database.Extensions.DataInteraction;
 
-namespace Pamaxie.Database.Design
+namespace Pamaxie.Database.Extensions
 {
     public interface IPamaxieDatabaseService
     {
+        public bool IsDbConnected { get; }
+        
+        /// <summary>
+        /// First db connection host (for connecting with the first db type)
+        /// </summary>
+        public dynamic DbConnectionHost1 { get; }
+        
+        /// <summary>
+        /// Second db connection host (for connecting a second db type)
+        /// </summary>
+        public dynamic DbConnectionHost2 { get; }
+        
         /// <summary>
         /// Service for accessing Pamaxie's application data
         /// </summary>
@@ -30,15 +42,31 @@ namespace Pamaxie.Database.Design
         /// </summary>
         /// <param name="connectionParams">The connection parameters for establishing a connection with the database</param>
         /// <returns><see cref="bool"/> if the connection with the database was successful</returns>
-        bool CheckDatabaseContext(IPamaxieDatabaseConfiguration connectionParams);
+        bool ValidateConfiguration(IPamaxieDatabaseConfiguration connectionParams);
 
         /// <summary>
-        /// Can be used for executing a certain command on a database level, if there is no predefined function for it. Please use sparingly since it basically negates the entire
-        /// purpose of this api (mostly should be used for database testing).
+        /// Connects to the database to create a long lasting / living connection
         /// </summary>
-        /// <param name="connectionParams">Connection Parameters for establishing a connection with the database</param>
-        /// <param name="command">The command as a string that should be executed</param>
+        /// <param name="connectionParams">Connection parameters to the database</param>
         /// <returns></returns>
-        string ExecuteCommand(IPamaxieDatabaseConfiguration connectionParams, string command);
+        void ConnectToDatabase(IPamaxieDatabaseConfiguration connectionParams = null);
+
+        /// <summary>
+        /// Async implementation of <see cref="ConnectToDatabase"/>
+        /// </summary>
+        /// <param name="connectionParams"></param>
+        /// <returns></returns>
+        Task ConnectToDatabaseAsync(IPamaxieDatabaseConfiguration connectionParams = null);
+
+        /// <summary>
+        /// Validates the Database Integrity
+        /// </summary>
+        void ValidateDatabase();
+        
+        /// <summary>
+        /// Validates the Database Integrity Async
+        /// </summary>
+        /// <returns></returns>
+        Task ValidateDatabaseAsync();
     }
 }
