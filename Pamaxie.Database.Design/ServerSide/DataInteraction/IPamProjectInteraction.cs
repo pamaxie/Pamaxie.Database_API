@@ -1,11 +1,12 @@
-﻿using Pamaxie.Data;
+﻿using System.Collections.Generic;
+using Pamaxie.Data;
 
 namespace Pamaxie.Database.Extensions.DataInteraction
 {
     /// <summary>
     /// Interface that defines Application interactions
     /// </summary>
-    public interface IPamProjectInteraction : IPamInteractionBase<IPamSqlObject>
+    public interface IPamProjectInteraction : IPamInteractionBase<IPamSqlObject, ulong>
     {
         /// <summary>
         /// Loads the <see cref="IPamProject.Owner"/> Property of the reached in <see cref="item"/>
@@ -13,6 +14,13 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <param name="item">The <see cref="IPamProject"/> to load the owner from</param>
         /// <returns><see cref="item"/> with it's <see cref="IPamProject.Owner"/> Loaded</returns>
         public IPamProject LoadOwner(IPamProject item);
+
+        /// <summary>
+        /// Gets the projects for the specific user
+        /// </summary>
+        /// <param name="user"></param>
+        /// <returns></returns>
+        public List<IPamProject> GetProjects(IPamUser user);
 
         /// <summary>
         /// Checks if a login can be authenticated via their <see cref="token"/>

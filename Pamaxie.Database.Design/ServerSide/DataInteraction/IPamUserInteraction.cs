@@ -1,24 +1,18 @@
-﻿using Pamaxie.Data;
+﻿using System.Collections.Generic;
+using Pamaxie.Data;
 
 namespace Pamaxie.Database.Extensions.DataInteraction
 {
     /// <summary>
     /// Interface that defines User interactions
     /// </summary>
-    public interface IPamUserInteraction : IPamInteractionBase<IPamSqlObject>
+    public interface IPamUserInteraction : IPamInteractionBase<IPamSqlObject, ulong>
     {
         /// <summary>
         /// Loads the <see cref="IPamUser.Projects"/> property
         /// </summary>
         /// <returns><see cref="IPamUser"/> with their <see cref="IPamUser.Projects"/> property loaded</returns>
         public IPamUser LoadProjects(IPamUser user);
-
-        /// <summary>
-        /// Loads the <see cref="IPamUser.Orgs"/> property
-        /// </summary>
-        /// <param name="user">User to load the property from</param>
-        /// <returns><see cref="IPamProject"/> with their <see cref="IPamUser.Orgs"/> property loaded</returns>
-        public IPamUser LoadOrgs(IPamUser user);
 
         /// <summary>
         /// Gets the users <see cref="PamProjectPermissions"/> for the project with the reached in <see cref="projectName"/>

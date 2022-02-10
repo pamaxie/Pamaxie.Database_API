@@ -26,11 +26,6 @@ namespace Pamaxie.Database.Extensions
         /// Service for accessing Pamaxie's user data
         /// </summary>
         IPamUserInteraction Users { get; }
-        
-        /// <summary>
-        /// Service for accessing Pamaxie's organizations (multiple users working on projects)
-        /// </summary>
-        IPamOrgInteraction Orgs { get; }
 
         /// <summary>
         /// Service for accessing scan results from Pamaxie's api

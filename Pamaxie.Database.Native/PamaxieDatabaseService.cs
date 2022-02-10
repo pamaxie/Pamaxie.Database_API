@@ -5,11 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using IdGen;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Npgsql;
 using Pamaxie.Database.Extensions;
 using Pamaxie.Database.Extensions.DataInteraction;
+using Pamaxie.Database.Native.DataInteraction.BusinessLogicExtensions;
 using StackExchange.Redis;
 
 namespace Pamaxie.Database.Native;
@@ -18,11 +20,10 @@ namespace Pamaxie.Database.Native;
 internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
 {
     private readonly PamaxieDatabaseDriver _owner;
-
     internal PamaxieDatabaseService(PamaxieDatabaseDriver owner)
     {
         this._owner = owner;
-        
+        Users = new PamUserInteraction();
     }
     
     /// <inheritdoc cref="IPamaxieDatabaseService.IsDbConnected"/>
@@ -39,10 +40,7 @@ internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
 
     /// <inheritdoc cref="IPamaxieDatabaseService.Users"/>
     public IPamUserInteraction Users { get; }
-        
-    /// <inheritdoc cref="IPamaxieDatabaseService.Orgs"/>
-    public IPamOrgInteraction Orgs { get; }
-        
+
     /// <inheritdoc cref="IPamaxieDatabaseService.Scans"/>
     public IPamScanInteraction Scans { get; }
 
@@ -75,14 +73,25 @@ internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
         }
         
         CleanRedisConnection();
-        DbConnectionHost1 = ConnectionMultiplexer.Connect(connectionParams.Db1Config);
-        PgSqlContext.SqlConnectionString = connectionParams.Db2Config;
+
+        try
+        {
+            DbConnectionHost1 = ConnectionMultiplexer.Connect(connectionParams.Db1Config);
+            PgSqlContext.SqlConnectionString = connectionParams.Db2Config;
+        }
+        catch (RedisConnectionException)
+        {
+            Debug.WriteLine("Unable to connect to Redis database. Please validate that it's connection parameters are correct.");
+        }
 
         using (var dbContext = new PgSqlContext())
         {
-
+            if (!dbContext.Database.CanConnect())
+            {
+                Debug.WriteLine("Unable to connect to the Postgres database. Please validate that it's connection parameters are correct.");
+            }
         }
-        
+
         //Stating our driver is in a functional state again.
         IsDbConnected = true;
     }
@@ -117,14 +126,26 @@ internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
     
     /// <inheritdoc cref="IPamaxieDatabaseService.ValidateDatabase"/>
     public void ValidateDatabase()
-    { 
+    {
         using var dbContext = new PgSqlContext();
         
         Debug.WriteLine("Ensuring Database is postgres");
+
+        if (!IsDbConnected)
+        {
+            throw new InvalidOperationException(
+                "Please validate the database connection can be established before validating the database.");
+        }
         
         if (!dbContext.Database.IsNpgsql())
         {
             throw new InvalidOperationException("The underlying database is not postgres");
+        }
+
+        if (!dbContext.Database.CanConnect())
+        {
+            throw new InvalidOperationException(
+                "Cannot connect to postgres database. Please validate that the connection parameters are correct");
         }
 
         var pendingMigrations = dbContext.Database.GetPendingMigrations();

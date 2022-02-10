@@ -14,22 +14,7 @@
       "launchUrl": "user/login",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "nativeDebugging": false
-    },
-    "Pamaxie.Api": {
-      "commandName": "Project",
-      "launchUrl": "user/login",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
-      "applicationUrl": "http://localhost:5000;https://api.Pamaxie.app:443"
-    },
-    "Docker": {
-      "commandName": "Docker",
-      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/user/login",
-      "publishAllPorts": true,
-      "useSSL": true
+      }
     },
     "WSL": {
       "commandName": "WSL2",
@@ -37,8 +22,28 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "ASPNETCORE_URLS": "http://localhost:5000;https://api.Pamaxie.app:443"
-      },
-      "distributionName": ""
+      }
+    },
+    "Pamaxie.Database.Api": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:32631;http://localhost:48133",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    "Docker": {
+      "commandName": "Docker",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/user/login",
+      "environmentVariables": {}
+    },
+    "Pamaxie.Api": {
+      "commandName": "Project",
+      "launchUrl": "user/login",
+      "applicationUrl": "http://localhost:5000;https://api.Pamaxie.app:443",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
     }
   }
 }

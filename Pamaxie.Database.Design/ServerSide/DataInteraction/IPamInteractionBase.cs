@@ -6,15 +6,16 @@ namespace Pamaxie.Database.Extensions.DataInteraction
     /// <summary>
     /// Defines how interactions with individual items in a database should be done
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public interface IPamInteractionBase<T> where T : class
+    /// <typeparam name="T">Storage Type</typeparam>
+    /// <typeparam name="T2">Indexing Type</typeparam>
+    public interface IPamInteractionBase<T, T2> where T : class
     {
         /// <summary>
         /// Gets a <see cref="T"/> value from the service
         /// </summary>
         /// <param name="uniqueKey">The unique Identifier of <see cref="T"/> to find a database record by (Id, UniqueKey, etc..)</param>
         /// <returns>Returns a <see cref="T"/> value</returns>
-        public T Get(string uniqueKey);
+        public T Get(T2 uniqueKey);
 
         /// <summary>
         /// Creates a new <see cref="T"/> value in the service, throws exception inside the service if the value already exists
@@ -22,15 +23,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <param name="data">The value that should be created</param>
         /// <returns>The created <see cref="T"/> value</returns>
         /// <exception cref="ArgumentException">The value already exist in the service</exception>
-        public T Create(T data);
-
-        /// <summary>
-        /// Creates a new <see cref="T"/> value to the service
-        /// </summary>
-        /// <param name="data">The <see cref="T"/> value that should be created</param>
-        /// <param name="createdItem">How the <see cref="T"/> value looks like inside the service</param>
-        /// <returns><see cref="bool"/> if the operation was successful and the <see cref="T"/> value was created</returns>
-        public bool TryCreate(T data, out T createdItem);
+        public bool Create(T data);
 
         /// <summary>
         /// Updates a <see cref="T"/> value inside the service,
@@ -39,15 +32,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <param name="data">The <see cref="T"/> value that should be updated</param>
         /// <returns>The updated <see cref="T"/> value of the service</returns>
         /// <exception cref="ArgumentException">The <see cref="T"/> value does not exist in the service</exception>
-        public T Update(T data);
-
-        /// <summary>
-        /// Updates a <see cref="T"/> value inside the service
-        /// </summary>
-        /// <param name="data">The <see cref="T"/> value that should be updated</param>
-        /// <param name="updatedItem">The updated <see cref="T"/> value of the service</param>
-        /// <returns><see cref="bool"/> if the operation was successful and the <see cref="T"/> value was updated</returns>
-        public bool TryUpdate(T data, out T updatedItem);
+        public bool Update(T data);
 
         /// <summary>
         /// Updates or creates a <see cref="T"/> value inside the service,
@@ -64,7 +49,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// </summary>
         /// <param name="uniqueKey"><see cref="string"/> that is searched for if it exists in the database</param>
         /// <returns><see cref="bool"/> if the value could be found</returns>
-        public bool Exists(string uniqueKey);
+        public bool Exists(T2 uniqueKey);
 
         /// <summary>
         /// Deletes a <see cref="T"/> value inside the service,

@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Net;
 using IdGen;
 using Microsoft.EntityFrameworkCore;
 using Pamaxie.Data;
@@ -9,15 +8,15 @@ using Pamaxie.Data;
 namespace Pamaxie.Database.Native.Sql;
 
 /// <summary>
-/// Stores known Ips users connected from
+/// Stores relationships between a User and a Project including their Permissions for the project
 /// </summary>
-public class KnownUserIp : IPamSqlObject
+public class ProjectUser : IPamSqlObject
 {
-    private static IdGenerator KnownIpsIdsGenerator = new IdGenerator(4);
+    private static IdGenerator ProjectIdGenerator = new IdGenerator(4);
     
-    public KnownUserIp()
+    public ProjectUser()
     {
-        Id = (ulong)KnownIpsIdsGenerator.CreateId();
+        Id = (ulong)ProjectIdGenerator.CreateId();
     }
     
     /// <inheritdoc cref="IPamSqlObject.Id"/>
@@ -26,15 +25,20 @@ public class KnownUserIp : IPamSqlObject
     public ulong Id { get; set; }
     
     /// <summary>
-    /// User who logged in with this IP previously
+    /// User who this Project is referencing
     /// </summary>
     public User User { get; set; }
+
+    /// <summary>
+    /// Id of the project this user is referencing
+    /// </summary>
+    public Project Project { get; set; }
     
     /// <summary>
-    /// IP address of new login
+    /// Permissions for the user
     /// </summary>
-    public string IpAddress { get; set; }
-    
+    public ProjectPermissions Permissions { get; set; }
+
     /// <inheritdoc cref="IPamSqlObject.TTL"/>
     public DateTime? TTL { get; set; }
 }

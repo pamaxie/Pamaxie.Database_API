@@ -1,5 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using IdGen;
+using Microsoft.EntityFrameworkCore;
 using Pamaxie.Data;
 
 namespace Pamaxie.Database.Native.Sql;
@@ -7,13 +11,21 @@ namespace Pamaxie.Database.Native.Sql;
 /// <summary>
 /// Stores Projects Data
 /// </summary>
-public class PamProjectData : IPamSqlObject
+[Index(nameof(TTL))]
+public class Project : IPamSqlObject
 {
+    private static IdGenerator ProjectIdGenerator = new IdGenerator(2);
+
+    public Project()
+    {
+        Id = (ulong)ProjectIdGenerator.CreateId();
+    }
+        
     /// <summary>
     /// <inheritdoc cref="IPamSqlObject.Id"/>
     /// </summary>
     [Key]
-    public int Id { get; set; }
+    public ulong Id { get; set; }
     
     /// <summary>
     /// Name of the project
@@ -21,9 +33,9 @@ public class PamProjectData : IPamSqlObject
     public string Name { get; set; }
     
     /// <summary>
-    /// Id of the Owner of this project (see <see cref="Flags"/> for owner type)
+    /// Id of the Owner of this project
     /// </summary>
-    public long OwnerId { get; set; }
+    public ulong OwnerId { get; set; }
     
     /// <summary>
     /// Flags of this Project
@@ -43,10 +55,20 @@ public class PamProjectData : IPamSqlObject
     /// <summary>
     /// Unique id of the user who edited this project
     /// </summary>
-    public long LastModifiedUserId { get; set; }
+    public ulong LastModifiedUserId { get; set; }
     
     /// <summary>
     /// <inheritdoc cref="IPamSqlObject.TTL"/>
     /// </summary>
     public DateTime? TTL { get; set; }
+    
+    /// <summary>
+    /// Users that are part of this project
+    /// </summary>
+    public List<ProjectUser> Users { get; set; }
+    
+    /// <summary>
+    /// Api keys for this project
+    /// </summary>
+    public List<ApiKey> ApiKeys { get; set; }
 }
