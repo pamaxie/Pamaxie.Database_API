@@ -25,12 +25,7 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
         throw new System.NotImplementedException();
     }
 
-    public bool TryUpdate(IPamNoSqlObject data, out IPamNoSqlObject updatedItem)
-    {
-        throw new System.NotImplementedException();
-    }
-
-    public bool UpdateOrCreate(IPamNoSqlObject data, out IPamNoSqlObject updatedOrCreatedItem)
+    public bool UpdateOrCreate(IPamNoSqlObject data)
     {
         throw new System.NotImplementedException();
     }

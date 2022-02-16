@@ -14,16 +14,17 @@ namespace Pamaxie.Database.Native.Sql;
 public class KnownUserIp : IPamSqlObject
 {
     private static IdGenerator KnownIpsIdsGenerator = new IdGenerator(4);
-    
+    private DateTime? _ttl;
+
     public KnownUserIp()
     {
-        Id = (ulong)KnownIpsIdsGenerator.CreateId();
+        Id = KnownIpsIdsGenerator.CreateId();
     }
     
     /// <inheritdoc cref="IPamSqlObject.Id"/>
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public ulong Id { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public long Id { get; set; }
     
     /// <summary>
     /// User who logged in with this IP previously
@@ -34,7 +35,20 @@ public class KnownUserIp : IPamSqlObject
     /// IP address of new login
     /// </summary>
     public string IpAddress { get; set; }
-    
+
     /// <inheritdoc cref="IPamSqlObject.TTL"/>
-    public DateTime? TTL { get; set; }
+    public DateTime? TTL
+    {
+        get => _ttl;
+        set
+        {
+            if (value.HasValue)
+            {
+                _ttl = value.Value.ToUniversalTime();
+                return;
+            }
+            
+            _ttl = null;
+        }
+    }
 }

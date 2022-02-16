@@ -2,6 +2,7 @@ using System;
 using IdGen;
 using Microsoft.EntityFrameworkCore;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
+using Pamaxie.Data;
 using Pamaxie.Database.Native.Sql;
 
 namespace Pamaxie.Database.Native;
@@ -69,6 +70,10 @@ public class PgSqlContext : DbContext
         modelBuilder.Entity<User>()
             .HasIndex(x => new { x.TTL })
             .IsUnique(false);
+        
+        modelBuilder.Entity<User>()
+            .HasIndex(x => new { x.Username })
+            .IsUnique(true);
 
         modelBuilder.Entity<User>()
             .HasKey(x => new {x.Id});
@@ -80,8 +85,12 @@ public class PgSqlContext : DbContext
         modelBuilder.Entity<Project>()
             .HasIndex(x => new { x.TTL })
             .IsUnique(false);
-        
+
         modelBuilder.Entity<Project>()
             .HasKey(x => new {x.Id});
+        
+        modelBuilder.Entity<Project>()
+            .HasIndex(x => new { x.Name })
+            .IsUnique(false);
     }
 }

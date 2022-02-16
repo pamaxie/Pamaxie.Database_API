@@ -13,16 +13,17 @@ namespace Pamaxie.Database.Native.Sql;
 public class ProjectUser : IPamSqlObject
 {
     private static IdGenerator ProjectIdGenerator = new IdGenerator(4);
-    
+    private DateTime? _ttl;
+
     public ProjectUser()
     {
-        Id = (ulong)ProjectIdGenerator.CreateId();
+        Id = ProjectIdGenerator.CreateId();
     }
     
     /// <inheritdoc cref="IPamSqlObject.Id"/>
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public ulong Id { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public long Id { get; set; }
     
     /// <summary>
     /// User who this Project is referencing
@@ -40,5 +41,18 @@ public class ProjectUser : IPamSqlObject
     public ProjectPermissions Permissions { get; set; }
 
     /// <inheritdoc cref="IPamSqlObject.TTL"/>
-    public DateTime? TTL { get; set; }
+    public DateTime? TTL
+    {
+        get => _ttl;
+        set
+        {
+            if (value.HasValue)
+            {
+                _ttl = value.Value.ToUniversalTime();
+                return;
+            }
+            
+            _ttl = null;
+        }
+    }
 }

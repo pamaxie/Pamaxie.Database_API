@@ -13,16 +13,17 @@ namespace Pamaxie.Database.Native.Sql;
 public class TwoFactorUser : IPamSqlObject
 {
     internal static IdGenerator TwoFactorIdGenerator = new IdGenerator(3);
+    private DateTime? _ttl;
 
     public TwoFactorUser()
     {
-        Id = (ulong)TwoFactorIdGenerator.CreateId();
+        Id = TwoFactorIdGenerator.CreateId();
     }
     
     /// <inheritdoc cref="IPamSqlObject.Id"/>
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public ulong Id { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public long Id { get; set; }
     
     /// <summary>
     /// User where 2fa is active
@@ -38,7 +39,20 @@ public class TwoFactorUser : IPamSqlObject
     /// Public key of the two factor authentication
     /// </summary>
     public string PublicKey { get; set; }
-    
+
     /// <inheritdoc cref="IPamSqlObject.TTL"/>
-    public DateTime? TTL { get; set; }
+    public DateTime? TTL
+    {
+        get => _ttl;
+        set
+        {
+            if (value.HasValue)
+            {
+                _ttl = value.Value.ToUniversalTime();
+                return;
+            }
+            
+            _ttl = null;
+        }
+    }
 }

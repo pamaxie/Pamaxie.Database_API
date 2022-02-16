@@ -8,7 +8,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
     /// </summary>
     /// <typeparam name="T">Storage Type</typeparam>
     /// <typeparam name="T2">Indexing Type</typeparam>
-    public interface IPamInteractionBase<T, T2> where T : class
+    public interface IPamInteractionBase<T, in T2>
     {
         /// <summary>
         /// Gets a <see cref="T"/> value from the service
@@ -39,10 +39,9 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// returns a <see cref="bool"/> depending if a new <see cref="T"/> value was updated or created inside the service.
         /// </summary>
         /// <param name="data">The <see cref="T"/> value that should be updated or created in the service</param>
-        /// <param name="updatedOrCreatedItem">The updated or created <see cref="T"/> value of the service</param>
         /// <returns><see cref="bool"/> if a new value was created</returns>
         /// <exception cref="ArgumentException">if <see cref="data"/> did not contain a valid key</exception>
-        public bool UpdateOrCreate(T data, out T updatedOrCreatedItem);
+        public bool UpdateOrCreate(T data);
 
         /// <summary>
         /// Checks if a given key exists in the database (does not read the key out)

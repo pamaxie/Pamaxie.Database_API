@@ -1,7 +1,9 @@
 ﻿// This project is mostly used for testing functions of the native database to see if everything works as intended
 
 using System.Diagnostics;
+using Pamaxie.Data;
 using Pamaxie.Database.Native;
+using Pamaxie.Database.Native.DataInteraction.BusinessLogicExtensions;
 using Pamaxie.Database.Native.Sql;
 
 
@@ -14,10 +16,8 @@ driver.Configuration.LoadConfig(driver.Configuration.GenerateConfig());
 driver.Service.ConnectToDatabase();
 driver.Service.ValidateDatabase();
 
-driver.Service.Users.Create(new User()
-{
-    Email = "TestUser@Test.de", FirstName = "Emilie", Flags = 0,
-    LastName = "Espiada"
-});
 
-driver.Service.Users.Get(1);
+var foundUser = (IPamUser) driver.Service.Users.Get(943111882401648640);
+
+Console.WriteLine("Don");
+

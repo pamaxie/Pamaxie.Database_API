@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using IdGen;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic.CompilerServices;
 using Pamaxie.Data;
 
 namespace Pamaxie.Database.Native.Sql;
@@ -13,17 +14,18 @@ namespace Pamaxie.Database.Native.Sql;
 public class ApiKey : IPamSqlObject
 {
     private static IdGenerator ApiKeyIdGenerator = new IdGenerator(4);
-    
+    private DateTime? _ttl;
+
     public ApiKey()
     {
-        Id = (ulong) ApiKeyIdGenerator.CreateId();
+        Id = ApiKeyIdGenerator.CreateId();
     }
     
     /// <inheritdoc cref="IPamSqlObject.Id"/>
     [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public ulong Id { get; set; }
-    
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public long Id { get; set; }
+
     /// <summary>
     /// Project that this API key is used with
     /// </summary>
@@ -35,5 +37,18 @@ public class ApiKey : IPamSqlObject
     public string CredentialHash { get; set; }
 
     /// <inheritdoc cref="IPamSqlObject.TTL"/>
-    public DateTime? TTL { get; set; }
+    public DateTime? TTL
+    {
+        get => _ttl;
+        set
+        {
+            if (value.HasValue)
+            {
+                _ttl = value.Value.ToUniversalTime();
+                return;
+            }
+            
+            _ttl = null;
+        }
+    }
 }

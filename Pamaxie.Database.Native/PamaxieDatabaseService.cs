@@ -23,7 +23,7 @@ internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
     internal PamaxieDatabaseService(PamaxieDatabaseDriver owner)
     {
         this._owner = owner;
-        Users = new PamUserInteraction();
+        UserSingleton = new PamUserInteraction();
     }
     
     /// <inheritdoc cref="IPamaxieDatabaseService.IsDbConnected"/>
@@ -36,13 +36,19 @@ internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
     public object DbConnectionHost2 { get; }
 
     /// <inheritdoc cref="IPamaxieDatabaseService.Projects"/>
-    public IPamProjectInteraction Projects { get; }
+    public IPamProjectInteraction Projects => ProjectSingleton;
+    
+    internal static IPamProjectInteraction ProjectSingleton { get; }
 
     /// <inheritdoc cref="IPamaxieDatabaseService.Users"/>
-    public IPamUserInteraction Users { get; }
+    public IPamUserInteraction Users => UserSingleton;
+
+    internal static IPamUserInteraction UserSingleton { get; set; }
 
     /// <inheritdoc cref="IPamaxieDatabaseService.Scans"/>
-    public IPamScanInteraction Scans { get; }
+    public IPamScanInteraction Scans => ScanSingleton;
+    
+    internal static IPamScanInteraction ScanSingleton { get; }
 
     /// <inheritdoc cref="IPamaxieDatabaseService.ValidateConfiguration"/>
     public bool ValidateConfiguration(IPamaxieDatabaseConfiguration connectionParams)
@@ -141,13 +147,7 @@ internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
         {
             throw new InvalidOperationException("The underlying database is not postgres");
         }
-
-        if (!dbContext.Database.CanConnect())
-        {
-            throw new InvalidOperationException(
-                "Cannot connect to postgres database. Please validate that the connection parameters are correct");
-        }
-
+        
         var pendingMigrations = dbContext.Database.GetPendingMigrations();
         
         if (pendingMigrations.Any())
@@ -156,11 +156,11 @@ internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
                         "Also automatically creating your database if it doesn't exist yet");
             dbContext.Database.Migrate();
         }
-        
+
         if (!dbContext.Database.CanConnect())
         {
-            throw new InvalidOperationException("A connection to our database could not be established. " +
-                                                "Please validate the connection string is correct.");
+            throw new InvalidOperationException(
+                "Cannot connect to postgres database. Please validate that the connection parameters are correct");
         }
     }
     

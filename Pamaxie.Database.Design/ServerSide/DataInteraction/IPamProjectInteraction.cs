@@ -35,6 +35,6 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <param name="permissions"><see cref="PamProjectPermissions"/> flags enum which permissions should be validated</param>
         /// <param name="username">username of the user which permissions should be validated</param>
         /// <returns></returns>
-        public bool HasPermission(PamProjectPermissions permissions, string username);
+        public bool HasPermission(ProjectPermissions permissions, string username);
     }
 }

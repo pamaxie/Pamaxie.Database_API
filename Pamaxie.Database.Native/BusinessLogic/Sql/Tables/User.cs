@@ -5,7 +5,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics.CodeAnalysis;
 using IdGen;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging.Abstractions;
 using Pamaxie.Data;
 
 namespace Pamaxie.Database.Native.Sql;
@@ -17,23 +16,23 @@ namespace Pamaxie.Database.Native.Sql;
 public class User : IPamSqlObject
 {
     private static IdGenerator UserIdGenerator = new IdGenerator(1);
+    private DateTime? _ttl;
+    private DateTime _creationDate;
     
     public User() : this(DateTime.Now) { }
 
     public User(DateTime creationDate)
     {
         CreationDate = creationDate;
-        Id = (ulong) UserIdGenerator.CreateId();
+        Id = UserIdGenerator.CreateId();
     }
-
-    [NotMapped]
-    private DateTime? _ttl;
 
     /// <summary>
     /// <inheritdoc cref="IPamSqlObject.Id"/>
     /// </summary>
     [Key]
-    public ulong Id { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public long Id { get; set; }
 
     /// <summary>
     /// Username of the user
@@ -69,7 +68,11 @@ public class User : IPamSqlObject
     /// <summary>
     /// When was this users account created.
     /// </summary>
-    public DateTime CreationDate { get; set; }
+    public DateTime CreationDate
+    {
+        get => _creationDate;
+        set => _creationDate = value.ToUniversalTime();
+    }
 
     /// <summary>
     /// <inheritdoc cref="TTL"/>
@@ -79,13 +82,13 @@ public class User : IPamSqlObject
         get => _ttl;
         set
         {
-            if (value == null)
+            if (value.HasValue)
             {
-                _ttl = null;
+                _ttl = value.Value.ToUniversalTime();
                 return;
             }
 
-            _ttl = value.Value.ToUniversalTime();
+            _ttl = null;
         } 
     }
 

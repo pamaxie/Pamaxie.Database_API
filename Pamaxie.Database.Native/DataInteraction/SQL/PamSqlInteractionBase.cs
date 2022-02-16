@@ -7,9 +7,9 @@ using Pamaxie.Database.Extensions.DataInteraction;
 
 namespace Pamaxie.Database.Native.DataInteraction;
 
-public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, ulong>
+public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, long>
 {
-    public IPamSqlObject Get(ulong uniqueKey)
+    public virtual IPamSqlObject Get(long uniqueKey)
     {
         using var context = new PgSqlContext();
         var obj = context.Find(typeof(T), uniqueKey as object);
@@ -22,12 +22,12 @@ public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, ulong
 
         try
         {
-            var obj = context.Add(data);
+            context.Add(data);
             context.SaveChanges();
         }
         catch (PostgresException)
         {
-            Debug.WriteLine("Caught exception while trying to create object in Postgres database. Please" +
+            Debug.WriteLine("Caught exception while trying to create object in the Postgres database. Please" +
                             "ensure the database is available and the objects reached in item contained a defined Id");
             return false;
         }
@@ -35,33 +35,52 @@ public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, ulong
         return true;
     }
 
-    public bool TryCreate(IPamSqlObject data, out IPamSqlObject createdItem)
-    {
-        throw new NotImplementedException();
-    }
-
     public bool Update(IPamSqlObject data)
     {
-        throw new NotImplementedException();
+        using var context = new PgSqlContext();
+
+        try
+        {
+            context.Update(data);
+            context.SaveChanges();
+        }
+        catch (PostgresException)
+        {
+            Debug.WriteLine("Caught exception while trying to update object in the Postgres database. Please" +
+                            "ensure the database is available and the objects reached in item contained a defined Id");
+            return false;
+        }
+
+        return true;
     }
 
-    public bool TryUpdate(IPamSqlObject data, out IPamSqlObject updatedItem)
+    public bool UpdateOrCreate(IPamSqlObject data)
     {
-        throw new NotImplementedException();
+        return Create(data) || Update(data);
     }
 
-    public bool UpdateOrCreate(IPamSqlObject data, out IPamSqlObject updatedOrCreatedItem)
+    public bool Exists(long uniqueKey)
     {
-        throw new NotImplementedException();
-    }
-
-    public bool Exists(ulong uniqueKey)
-    {
-        throw new NotImplementedException();
+        var item = Get(uniqueKey);
+        return item == null;
     }
 
     public bool Delete(IPamSqlObject data)
     {
-        throw new NotImplementedException();
+        using var context = new PgSqlContext();
+
+        try
+        {
+            context.Remove(data);
+            context.SaveChanges();
+        }
+        catch (PostgresException)
+        {
+            Debug.WriteLine("Caught exception while trying to remove object from the Postgres database. Please" +
+                            "ensure the database is available and the objects reached in item contained a defined Id");
+            return false;
+        }
+
+        return true;
     }
 }

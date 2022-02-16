@@ -15,17 +15,21 @@ namespace Pamaxie.Database.Native.Sql;
 public class Project : IPamSqlObject
 {
     private static IdGenerator ProjectIdGenerator = new IdGenerator(2);
+    private DateTime _creationDate;
+    private DateTime _lastModified;
+    private DateTime? _ttl;
 
     public Project()
     {
-        Id = (ulong)ProjectIdGenerator.CreateId();
+        Id = ProjectIdGenerator.CreateId();
     }
         
     /// <summary>
     /// <inheritdoc cref="IPamSqlObject.Id"/>
     /// </summary>
     [Key]
-    public ulong Id { get; set; }
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
+    public long Id { get; set; }
     
     /// <summary>
     /// Name of the project
@@ -41,27 +45,48 @@ public class Project : IPamSqlObject
     /// Flags of this Project
     /// </summary>
     public ProjectFlags Flags { get; set; }
-    
+
     /// <summary>
     /// When this project was created
     /// </summary>
-    public DateTime CreationDate { get; set; }
-    
+    public DateTime CreationDate
+    {
+        get => _creationDate;
+        set => _creationDate = value.ToUniversalTime();
+    }
+
     /// <summary>
     /// When this Project was last edited / modified
     /// </summary>
-    public DateTime LastModified { get; set; }
-    
+    public DateTime LastModified
+    {
+        get => _lastModified;
+        set => _lastModified = value.ToUniversalTime();
+    }
+
     /// <summary>
     /// Unique id of the user who edited this project
     /// </summary>
     public ulong LastModifiedUserId { get; set; }
-    
+
     /// <summary>
     /// <inheritdoc cref="IPamSqlObject.TTL"/>
     /// </summary>
-    public DateTime? TTL { get; set; }
-    
+    public DateTime? TTL
+    {
+        get => _ttl;
+        set
+        {
+            if (value.HasValue)
+            {
+                _ttl = value.Value.ToUniversalTime();
+                return;
+            }
+            
+            _ttl = null;
+        }
+    }
+
     /// <summary>
     /// Users that are part of this project
     /// </summary>

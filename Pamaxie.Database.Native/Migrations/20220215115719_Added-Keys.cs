@@ -4,32 +4,31 @@
 
 namespace Pamaxie.Database.Native.Migrations
 {
-    public partial class AddedMoreKeys : Migration
+    public partial class AddedKeys : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "email",
+            migrationBuilder.CreateIndex(
+                name: "ix_users_username",
                 table: "users",
-                type: "text",
-                nullable: true);
+                column: "username",
+                unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_users_email",
-                table: "users",
-                column: "email",
-                unique: true);
+                name: "ix_projects_name",
+                table: "projects",
+                column: "name");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
-                name: "ix_users_email",
+                name: "ix_users_username",
                 table: "users");
 
-            migrationBuilder.DropColumn(
-                name: "email",
-                table: "users");
+            migrationBuilder.DropIndex(
+                name: "ix_projects_name",
+                table: "projects");
         }
     }
 }

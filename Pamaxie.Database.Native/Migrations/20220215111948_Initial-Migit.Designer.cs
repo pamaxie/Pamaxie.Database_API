@@ -12,8 +12,8 @@ using Pamaxie.Database.Native;
 namespace Pamaxie.Database.Native.Migrations
 {
     [DbContext(typeof(PgSqlContext))]
-    [Migration("20220210131104_Change-Data-Structure")]
-    partial class ChangeDataStructure
+    [Migration("20220215111948_Initial-Migit")]
+    partial class InitialMigit
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -26,17 +26,16 @@ namespace Pamaxie.Database.Native.Migrations
 
             modelBuilder.Entity("Pamaxie.Database.Native.Sql.ApiKey", b =>
                 {
-                    b.Property<decimal>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
 
                     b.Property<string>("CredentialHash")
                         .HasColumnType("text")
                         .HasColumnName("credential_hash");
 
-                    b.Property<decimal?>("ProjectId")
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long?>("ProjectId")
+                        .HasColumnType("bigint")
                         .HasColumnName("project_id");
 
                     b.Property<DateTime?>("TTL")
@@ -54,9 +53,8 @@ namespace Pamaxie.Database.Native.Migrations
 
             modelBuilder.Entity("Pamaxie.Database.Native.Sql.KnownUserIp", b =>
                 {
-                    b.Property<decimal>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
 
                     b.Property<string>("IpAddress")
@@ -67,8 +65,8 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ttl");
 
-                    b.Property<decimal?>("UserId")
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -82,9 +80,8 @@ namespace Pamaxie.Database.Native.Migrations
 
             modelBuilder.Entity("Pamaxie.Database.Native.Sql.Project", b =>
                 {
-                    b.Property<decimal>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
 
                     b.Property<DateTime>("CreationDate")
@@ -126,25 +123,24 @@ namespace Pamaxie.Database.Native.Migrations
 
             modelBuilder.Entity("Pamaxie.Database.Native.Sql.ProjectUser", b =>
                 {
-                    b.Property<decimal>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
 
                     b.Property<int>("Permissions")
                         .HasColumnType("integer")
                         .HasColumnName("permissions");
 
-                    b.Property<decimal?>("ProjectId")
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long?>("ProjectId")
+                        .HasColumnType("bigint")
                         .HasColumnName("project_id");
 
                     b.Property<DateTime?>("TTL")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ttl");
 
-                    b.Property<decimal?>("UserId")
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -161,9 +157,8 @@ namespace Pamaxie.Database.Native.Migrations
 
             modelBuilder.Entity("Pamaxie.Database.Native.Sql.TwoFactorUser", b =>
                 {
-                    b.Property<decimal>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
 
                     b.Property<string>("PublicKey")
@@ -178,8 +173,8 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("type");
 
-                    b.Property<decimal?>("UserId")
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
@@ -193,17 +188,48 @@ namespace Pamaxie.Database.Native.Migrations
 
             modelBuilder.Entity("Pamaxie.Database.Native.Sql.User", b =>
                 {
-                    b.Property<decimal>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
                         .HasColumnName("id");
+
+                    b.Property<DateTime>("CreationDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("creation_date");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("text")
+                        .HasColumnName("email");
+
+                    b.Property<string>("FirstName")
+                        .HasColumnType("text")
+                        .HasColumnName("first_name");
+
+                    b.Property<int>("Flags")
+                        .HasColumnType("integer")
+                        .HasColumnName("flags");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("text")
+                        .HasColumnName("last_name");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text")
+                        .HasColumnName("password_hash");
 
                     b.Property<DateTime?>("TTL")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ttl");
 
+                    b.Property<string>("Username")
+                        .HasColumnType("text")
+                        .HasColumnName("username");
+
                     b.HasKey("Id")
                         .HasName("pk_users");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_email");
 
                     b.HasIndex("TTL")
                         .HasDatabaseName("ix_users_ttl");
