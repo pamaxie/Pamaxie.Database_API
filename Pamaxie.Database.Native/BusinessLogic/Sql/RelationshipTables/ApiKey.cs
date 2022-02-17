@@ -11,9 +11,10 @@ namespace Pamaxie.Database.Native.Sql;
 /// <summary>
 /// Api keys that allow access to Pamaxie's Scanning API
 /// </summary>
+[Index(nameof(ProjectId), nameof(CredentialHash))]
 public class ApiKey : IPamSqlObject
 {
-    private static IdGenerator ApiKeyIdGenerator = new IdGenerator(4);
+    internal static IdGenerator ApiKeyIdGenerator = new IdGenerator(4);
     private DateTime? _ttl;
 
     public ApiKey()
@@ -29,7 +30,7 @@ public class ApiKey : IPamSqlObject
     /// <summary>
     /// Project that this API key is used with
     /// </summary>
-    public Project Project { get; set; }
+    public long ProjectId { get; set; }
     
     /// <summary>
     /// Credential hash that is used to authenticated with the API

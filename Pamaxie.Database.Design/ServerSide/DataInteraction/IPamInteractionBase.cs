@@ -14,6 +14,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// Gets a <see cref="T"/> value from the service
         /// </summary>
         /// <param name="uniqueKey">The unique Identifier of <see cref="T"/> to find a database record by (Id, UniqueKey, etc..)</param>
+        ///<param name="baseObject">Should the database object be loaded instead of the presentation object?</param>
         /// <returns>Returns a <see cref="T"/> value</returns>
         public T Get(T2 uniqueKey);
 

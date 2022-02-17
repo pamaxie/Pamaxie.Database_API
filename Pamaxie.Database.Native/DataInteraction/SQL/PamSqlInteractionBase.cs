@@ -35,7 +35,7 @@ public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, long>
         return true;
     }
 
-    public bool Update(IPamSqlObject data)
+    public virtual bool Update(IPamSqlObject data)
     {
         using var context = new PgSqlContext();
 
@@ -54,7 +54,7 @@ public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, long>
         return true;
     }
 
-    public bool UpdateOrCreate(IPamSqlObject data)
+    public virtual bool UpdateOrCreate(IPamSqlObject data)
     {
         return Create(data) || Update(data);
     }

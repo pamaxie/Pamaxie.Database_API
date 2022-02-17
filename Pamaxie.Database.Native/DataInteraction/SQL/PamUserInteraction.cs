@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
 using Pamaxie.Data;
 using Pamaxie.Database.Native.Sql;
 
@@ -10,14 +11,46 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
     /// <inheritdoc cref="Get"/>
     public override IPamSqlObject Get(long uniqueKey)
     {
+        if (uniqueKey <= 0)
+        {
+            throw new ArgumentException("Invalid unique Key for the User", nameof(uniqueKey));
+        }
+        
         var item = base.Get(uniqueKey);
         
         if (item is not User user)
         {
             return null;
         }
-
+        
+        
         return user.ToIPamUser();
+    }
+    
+    public override bool Create(IPamSqlObject data)
+    {
+        if (data is IPamUser pamUser)
+        {
+            pamUser.Id = User.UserIdGenerator.CreateId();
+            return base.Create(pamUser.ToDbUser());
+        }
+        
+        return base.Create(data);
+    }
+
+    public override bool Update(IPamSqlObject data)
+    {
+        if (data is IPamUser pamUser)
+        {
+            return base.Update(pamUser.ToDbUser());
+        }
+        
+        return base.Update(data);
+    }
+
+    public override bool UpdateOrCreate(IPamSqlObject data)
+    {
+        return base.UpdateOrCreate(data);
     }
     
     /// <inheritdoc cref="Get"/>
@@ -80,25 +113,35 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
         }
 
         using var context = new PgSqlContext();
-        var dbUser = context.Users.FirstOrDefault(x => x.Id == user.Id);
-        var projects = dbUser.Projects.ToList();
-        user.Projects = new LazyList<IPamProject>();
+        var projects = context.ProjectUsers.Where(x => x.UserId == user.Id);
+        user.Projects = new LazyList<(IPamProject Project, long ProjectId)>();
 
         foreach (var project in projects)
         {
-            user.Projects.Add(new PamProject
+            var dbData = PamaxieDatabaseService.ProjectSingleton.Get(project.ProjectId);
+            if (dbData is not Project projectData)
             {
-                Id = project.Project.Id,
-                Name = project.Project.Name,
-                Owner = new LazyObject<IPamUser, string>(){IsLoaded = false},
-                LastModifiedUser = new LazyObject<IPamUser, string>(){IsLoaded = false},
-                CreationDate = project.Project.CreationDate,
-                LastModified = project.Project.LastModified,
-                Users = new LazyList<(string UserName, ProjectPermissions Permission)>(){IsLoaded = false},
+                throw new Exception(
+                    "Sadly we were not able to load the projects because of an internal server error. " +
+                    "Please try again at a later time or contact your system administrator.");
+            }
+            
+            
+            var newProject = new PamProject
+            {
+                Id = projectData.Id,
+                Name = projectData.Name,
+                Owner = new LazyObject<(IPamUser User, long UserId)>() { Data = ( null, projectData.OwnerId ), IsLoaded = false },
+                LastModifiedUser = new LazyObject<(IPamUser User, long UserId)>() { Data = ( null, projectData.LastModifiedUserId ), IsLoaded = false},
+                CreationDate = projectData.CreationDate,
+                LastModified = projectData.LastModified,
+                Users = new LazyList<(long UserId, ProjectPermissions Permission)>() { IsLoaded = false },
                 ApiTokens = new LazyList<(string Token, DateTime LastUsage)>(){IsLoaded = false},
-                Flags = project.Project.Flags,
-                TTL = project.Project.TTL
-            });
+                Flags = projectData.Flags,
+                TTL = projectData.TTL
+            };
+            
+            user.Projects.Add((newProject, project.Id));
         }
 
         return user;
@@ -119,8 +162,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
         
         using var context = new PgSqlContext();
         var project = context.Projects.FirstOrDefault(x => x.Name == projectName);
-        var projectUser = project.Users.FirstOrDefault(x => x.Id == user.Id);
-
+        var projectUser = context.ProjectUsers.FirstOrDefault(x => x.ProjectId == project.Id && x.UserId == user.Id);
         return projectUser?.Permissions ?? ProjectPermissions.None;
     }
     
@@ -138,9 +180,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
         }
         
         using var context = new PgSqlContext();
-        var project = context.Projects.FirstOrDefault(x => x.Id == projectId);
-        var projectUser = project.Users.FirstOrDefault(x => x.Id == user.Id);
-
+        var projectUser = context.ProjectUsers.FirstOrDefault(x => x.ProjectId == projectId && x.UserId == user.Id);
         return projectUser?.Permissions ?? ProjectPermissions.None;
     }
     
@@ -153,7 +193,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
         }
         
         using var context = new PgSqlContext();
-        var twoFactorOptions = context.TwoFactorUsers.Where(x => x.User.Id == user.Id);
+        var twoFactorOptions = context.TwoFactorUsers.Where(x => x.UserId == user.Id);
         
         foreach (var twoFactorOption in twoFactorOptions)
         {
@@ -172,7 +212,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
         }
         
         using var context = new PgSqlContext();
-        var knownIps = context.KnownUserIps.Where(x => x.User.Id == user.Id);
+        var knownIps = context.KnownUserIps.Where(x => x.UserId == user.Id);
         foreach (var knownIp in knownIps)
         {
             user.KnownIps.Add(knownIp.IpAddress);
@@ -185,7 +225,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
     public bool IsIpKnown(IPamUser user, string ipAddress)
     {
         using var context = new PgSqlContext();
-        return context.KnownUserIps.Any(x => x.User.Id == user.Id && x.IpAddress == ipAddress);
+        return context.KnownUserIps.Any(x => x.UserId == user.Id && x.IpAddress == ipAddress);
     }
 
     /// <inheritdoc cref="GetUniqueKey(string)"/>

@@ -10,14 +10,19 @@ namespace Pamaxie.Database.Native.Sql;
 /// <summary>
 /// Stores relationships between a User and a Project including their Permissions for the project
 /// </summary>
+[Index(nameof(UserId), nameof(ProjectId))]
 public class ProjectUser : IPamSqlObject
 {
-    private static IdGenerator ProjectIdGenerator = new IdGenerator(4);
+    internal static IdGenerator ProjectIdGenerator = new IdGenerator(4);
     private DateTime? _ttl;
 
-    public ProjectUser()
+    internal ProjectUser() : this(0, 0) { }
+
+    public ProjectUser(long userId, long projectId)
     {
         Id = ProjectIdGenerator.CreateId();
+        UserId = userId;
+        ProjectId = projectId;
     }
     
     /// <inheritdoc cref="IPamSqlObject.Id"/>
@@ -28,12 +33,12 @@ public class ProjectUser : IPamSqlObject
     /// <summary>
     /// User who this Project is referencing
     /// </summary>
-    public User User { get; set; }
+    public long UserId { get; set; }
 
     /// <summary>
     /// Id of the project this user is referencing
     /// </summary>
-    public Project Project { get; set; }
+    public long ProjectId { get; set; }
     
     /// <summary>
     /// Permissions for the user

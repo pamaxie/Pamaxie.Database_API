@@ -47,50 +47,5 @@ public class PgSqlContext : DbContext
     
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<ApiKey>()
-            .HasOne(x => x.Project)
-            .WithMany(y => y.ApiKeys);
-
-        modelBuilder.Entity<KnownUserIp>()
-            .HasOne(x => x.User)
-            .WithMany(y => y.KnownIps);
-        
-        modelBuilder.Entity<ProjectUser>()
-            .HasOne(x => x.Project)
-            .WithMany(y => y.Users);
-        
-        modelBuilder.Entity<ProjectUser>()
-            .HasOne(x => x.User)
-            .WithMany(y => y.Projects);
-
-        modelBuilder.Entity<TwoFactorUser>()
-            .HasOne(x => x.User)
-            .WithMany(y => y.TwoFactorAuths);
-        
-        modelBuilder.Entity<User>()
-            .HasIndex(x => new { x.TTL })
-            .IsUnique(false);
-        
-        modelBuilder.Entity<User>()
-            .HasIndex(x => new { x.Username })
-            .IsUnique(true);
-
-        modelBuilder.Entity<User>()
-            .HasKey(x => new {x.Id});
-
-        modelBuilder.Entity<User>()
-            .HasIndex(x => new {x.Email})
-            .IsUnique(true);
-
-        modelBuilder.Entity<Project>()
-            .HasIndex(x => new { x.TTL })
-            .IsUnique(false);
-
-        modelBuilder.Entity<Project>()
-            .HasKey(x => new {x.Id});
-        
-        modelBuilder.Entity<Project>()
-            .HasIndex(x => new { x.Name })
-            .IsUnique(false);
     }
 }

@@ -10,6 +10,7 @@ namespace Pamaxie.Database.Native.Sql;
 /// <summary>
 /// Stores data for the users who have two factor authentication enabled
 /// </summary>
+[Index(nameof(UserId))]
 public class TwoFactorUser : IPamSqlObject
 {
     internal static IdGenerator TwoFactorIdGenerator = new IdGenerator(3);
@@ -28,7 +29,7 @@ public class TwoFactorUser : IPamSqlObject
     /// <summary>
     /// User where 2fa is active
     /// </summary>
-    public User User { get; set; }
+    public long UserId { get; set; }
     
     /// <summary>
     /// Two factor type

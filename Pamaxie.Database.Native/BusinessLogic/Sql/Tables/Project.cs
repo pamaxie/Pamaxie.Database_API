@@ -11,10 +11,10 @@ namespace Pamaxie.Database.Native.Sql;
 /// <summary>
 /// Stores Projects Data
 /// </summary>
-[Index(nameof(TTL))]
+[Index(nameof(TTL), nameof(OwnerId), nameof(Name))]
 public class Project : IPamSqlObject
 {
-    private static IdGenerator ProjectIdGenerator = new IdGenerator(2);
+    internal static IdGenerator ProjectIdGenerator = new IdGenerator(2);
     private DateTime _creationDate;
     private DateTime _lastModified;
     private DateTime? _ttl;
@@ -34,21 +34,30 @@ public class Project : IPamSqlObject
     /// <summary>
     /// Name of the project
     /// </summary>
+    [Required]
     public string Name { get; set; }
+    
+    /// <summary>
+    /// Url where the picture of a project resides
+    /// </summary>
+    public string ProjectPicture { get; set; }
     
     /// <summary>
     /// Id of the Owner of this project
     /// </summary>
-    public ulong OwnerId { get; set; }
+    [Required]
+    public long OwnerId { get; set; }
     
     /// <summary>
     /// Flags of this Project
     /// </summary>
+    [Required]
     public ProjectFlags Flags { get; set; }
 
     /// <summary>
     /// When this project was created
     /// </summary>
+    [Required]
     public DateTime CreationDate
     {
         get => _creationDate;
@@ -67,8 +76,8 @@ public class Project : IPamSqlObject
     /// <summary>
     /// Unique id of the user who edited this project
     /// </summary>
-    public ulong LastModifiedUserId { get; set; }
-
+    public long LastModifiedUserId { get; set; }
+ 
     /// <summary>
     /// <inheritdoc cref="IPamSqlObject.TTL"/>
     /// </summary>
@@ -86,14 +95,4 @@ public class Project : IPamSqlObject
             _ttl = null;
         }
     }
-
-    /// <summary>
-    /// Users that are part of this project
-    /// </summary>
-    public List<ProjectUser> Users { get; set; }
-    
-    /// <summary>
-    /// Api keys for this project
-    /// </summary>
-    public List<ApiKey> ApiKeys { get; set; }
 }

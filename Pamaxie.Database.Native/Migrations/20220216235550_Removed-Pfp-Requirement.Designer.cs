@@ -12,14 +12,14 @@ using Pamaxie.Database.Native;
 namespace Pamaxie.Database.Native.Migrations
 {
     [DbContext(typeof(PgSqlContext))]
-    [Migration("20220215115719_Added-Keys")]
-    partial class AddedKeys
+    [Migration("20220216235550_Removed-Pfp-Requirement")]
+    partial class RemovedPfpRequirement
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.1")
+                .HasAnnotation("ProductVersion", "6.0.2")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -34,7 +34,7 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("text")
                         .HasColumnName("credential_hash");
 
-                    b.Property<long?>("ProjectId")
+                    b.Property<long>("ProjectId")
                         .HasColumnType("bigint")
                         .HasColumnName("project_id");
 
@@ -45,8 +45,8 @@ namespace Pamaxie.Database.Native.Migrations
                     b.HasKey("Id")
                         .HasName("pk_api_keys");
 
-                    b.HasIndex("ProjectId")
-                        .HasDatabaseName("ix_api_keys_project_id");
+                    b.HasIndex("ProjectId", "CredentialHash")
+                        .HasDatabaseName("ix_api_keys_project_id_credential_hash");
 
                     b.ToTable("api_keys", (string)null);
                 });
@@ -65,15 +65,15 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ttl");
 
-                    b.Property<long?>("UserId")
+                    b.Property<long>("UserId")
                         .HasColumnType("bigint")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
                         .HasName("pk_known_user_ips");
 
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_known_user_ips_user_id");
+                    b.HasIndex("UserId", "IpAddress")
+                        .HasDatabaseName("ix_known_user_ips_user_id_ip_address");
 
                     b.ToTable("known_user_ips", (string)null);
                 });
@@ -96,17 +96,22 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_modified");
 
-                    b.Property<decimal>("LastModifiedUserId")
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long>("LastModifiedUserId")
+                        .HasColumnType("bigint")
                         .HasColumnName("last_modified_user_id");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("name");
 
-                    b.Property<decimal>("OwnerId")
-                        .HasColumnType("numeric(20,0)")
+                    b.Property<long>("OwnerId")
+                        .HasColumnType("bigint")
                         .HasColumnName("owner_id");
+
+                    b.Property<string>("ProjectPicture")
+                        .HasColumnType("text")
+                        .HasColumnName("project_picture");
 
                     b.Property<DateTime?>("TTL")
                         .HasColumnType("timestamp with time zone")
@@ -115,11 +120,8 @@ namespace Pamaxie.Database.Native.Migrations
                     b.HasKey("Id")
                         .HasName("pk_projects");
 
-                    b.HasIndex("Name")
-                        .HasDatabaseName("ix_projects_name");
-
-                    b.HasIndex("TTL")
-                        .HasDatabaseName("ix_projects_ttl");
+                    b.HasIndex("TTL", "OwnerId", "Name")
+                        .HasDatabaseName("ix_projects_ttl_owner_id_name");
 
                     b.ToTable("projects", (string)null);
                 });
@@ -134,7 +136,7 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("permissions");
 
-                    b.Property<long?>("ProjectId")
+                    b.Property<long>("ProjectId")
                         .HasColumnType("bigint")
                         .HasColumnName("project_id");
 
@@ -142,18 +144,15 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ttl");
 
-                    b.Property<long?>("UserId")
+                    b.Property<long>("UserId")
                         .HasColumnType("bigint")
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
                         .HasName("pk_project_users");
 
-                    b.HasIndex("ProjectId")
-                        .HasDatabaseName("ix_project_users_project_id");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_project_users_user_id");
+                    b.HasIndex("UserId", "ProjectId")
+                        .HasDatabaseName("ix_project_users_user_id_project_id");
 
                     b.ToTable("project_users", (string)null);
                 });
@@ -176,7 +175,7 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("type");
 
-                    b.Property<long?>("UserId")
+                    b.Property<long>("UserId")
                         .HasColumnType("bigint")
                         .HasColumnName("user_id");
 
@@ -200,10 +199,12 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnName("creation_date");
 
                     b.Property<string>("Email")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("email");
 
                     b.Property<string>("FirstName")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("first_name");
 
@@ -212,99 +213,35 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnName("flags");
 
                     b.Property<string>("LastName")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("last_name");
 
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
+
+                    b.Property<string>("ProfilePictureUrl")
+                        .HasColumnType("text")
+                        .HasColumnName("profile_picture_url");
 
                     b.Property<DateTime?>("TTL")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ttl");
 
                     b.Property<string>("Username")
+                        .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("username");
 
                     b.HasKey("Id")
                         .HasName("pk_users");
 
-                    b.HasIndex("Email")
-                        .IsUnique()
-                        .HasDatabaseName("ix_users_email");
-
-                    b.HasIndex("TTL")
-                        .HasDatabaseName("ix_users_ttl");
-
-                    b.HasIndex("Username")
-                        .IsUnique()
-                        .HasDatabaseName("ix_users_username");
+                    b.HasIndex("TTL", "Username", "Email")
+                        .HasDatabaseName("ix_users_ttl_username_email");
 
                     b.ToTable("users", (string)null);
-                });
-
-            modelBuilder.Entity("Pamaxie.Database.Native.Sql.ApiKey", b =>
-                {
-                    b.HasOne("Pamaxie.Database.Native.Sql.Project", "Project")
-                        .WithMany("ApiKeys")
-                        .HasForeignKey("ProjectId")
-                        .HasConstraintName("fk_api_keys_projects_project_id");
-
-                    b.Navigation("Project");
-                });
-
-            modelBuilder.Entity("Pamaxie.Database.Native.Sql.KnownUserIp", b =>
-                {
-                    b.HasOne("Pamaxie.Database.Native.Sql.User", "User")
-                        .WithMany("KnownIps")
-                        .HasForeignKey("UserId")
-                        .HasConstraintName("fk_known_user_ips_users_user_id");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Pamaxie.Database.Native.Sql.ProjectUser", b =>
-                {
-                    b.HasOne("Pamaxie.Database.Native.Sql.Project", "Project")
-                        .WithMany("Users")
-                        .HasForeignKey("ProjectId")
-                        .HasConstraintName("fk_project_users_projects_project_id");
-
-                    b.HasOne("Pamaxie.Database.Native.Sql.User", "User")
-                        .WithMany("Projects")
-                        .HasForeignKey("UserId")
-                        .HasConstraintName("fk_project_users_users_user_id");
-
-                    b.Navigation("Project");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Pamaxie.Database.Native.Sql.TwoFactorUser", b =>
-                {
-                    b.HasOne("Pamaxie.Database.Native.Sql.User", "User")
-                        .WithMany("TwoFactorAuths")
-                        .HasForeignKey("UserId")
-                        .HasConstraintName("fk_two_factor_users_users_user_id");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Pamaxie.Database.Native.Sql.Project", b =>
-                {
-                    b.Navigation("ApiKeys");
-
-                    b.Navigation("Users");
-                });
-
-            modelBuilder.Entity("Pamaxie.Database.Native.Sql.User", b =>
-                {
-                    b.Navigation("KnownIps");
-
-                    b.Navigation("Projects");
-
-                    b.Navigation("TwoFactorAuths");
                 });
 #pragma warning restore 612, 618
         }

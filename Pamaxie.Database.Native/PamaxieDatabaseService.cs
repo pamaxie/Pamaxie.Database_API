@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Npgsql;
 using Pamaxie.Database.Extensions;
 using Pamaxie.Database.Extensions.DataInteraction;
+using Pamaxie.Database.Native.DataInteraction;
 using Pamaxie.Database.Native.DataInteraction.BusinessLogicExtensions;
 using StackExchange.Redis;
 
@@ -24,6 +25,14 @@ internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
     {
         this._owner = owner;
         UserSingleton = new PamUserInteraction();
+        ProjectSingleton = new PamProjectInteraction();
+    }
+
+    public PamaxieDatabaseService(IPamUserInteraction userInteraction, IPamProjectInteraction projectInteraction, IPamScanInteraction scanInteraction)
+    {
+        UserSingleton = userInteraction;
+        ProjectSingleton = projectInteraction;
+        ScanSingleton = scanInteraction;
     }
     
     /// <inheritdoc cref="IPamaxieDatabaseService.IsDbConnected"/>
@@ -38,7 +47,7 @@ internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
     /// <inheritdoc cref="IPamaxieDatabaseService.Projects"/>
     public IPamProjectInteraction Projects => ProjectSingleton;
     
-    internal static IPamProjectInteraction ProjectSingleton { get; }
+    internal static IPamProjectInteraction ProjectSingleton { get; set; }
 
     /// <inheritdoc cref="IPamaxieDatabaseService.Users"/>
     public IPamUserInteraction Users => UserSingleton;
@@ -48,7 +57,7 @@ internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
     /// <inheritdoc cref="IPamaxieDatabaseService.Scans"/>
     public IPamScanInteraction Scans => ScanSingleton;
     
-    internal static IPamScanInteraction ScanSingleton { get; }
+    internal static IPamScanInteraction ScanSingleton { get; set; }
 
     /// <inheritdoc cref="IPamaxieDatabaseService.ValidateConfiguration"/>
     public bool ValidateConfiguration(IPamaxieDatabaseConfiguration connectionParams)

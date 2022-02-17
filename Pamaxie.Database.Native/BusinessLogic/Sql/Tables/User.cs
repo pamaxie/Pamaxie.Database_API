@@ -12,10 +12,10 @@ namespace Pamaxie.Database.Native.Sql;
 /// <summary>
 /// Stores Users data
 /// </summary>
-[Index(nameof(TTL))]
+[Index(nameof(TTL), nameof(Username), nameof(Email))]
 public class User : IPamSqlObject
 {
-    private static IdGenerator UserIdGenerator = new IdGenerator(1);
+    internal static IdGenerator UserIdGenerator = new IdGenerator(1);
     private DateTime? _ttl;
     private DateTime _creationDate;
     
@@ -25,6 +25,9 @@ public class User : IPamSqlObject
     {
         CreationDate = creationDate;
         Id = UserIdGenerator.CreateId();
+        
+        //Temporary I'm a bit lazy rn to fix this. Won't go like this public.
+        ProfilePictureUrl = "null";
     }
 
     /// <summary>
@@ -37,37 +40,50 @@ public class User : IPamSqlObject
     /// <summary>
     /// Username of the user
     /// </summary>
+    [Required]
     public string Username { get; set; }
+    
+    /// <summary>
+    /// Url where the profile picture of the user resides
+    /// </summary>
+    public string ProfilePictureUrl { get; set; }
 
     /// <summary>
     /// Email of the user (please validate its verified before allowing a login)
     /// </summary>
+    [Required]
+    [DataType(DataType.EmailAddress)]
     public string Email { get; set; }
 
     /// <summary>
     /// First name of the user
     /// </summary>
+    [Required]
     public string FirstName { get; set; }
 
     /// <summary>
     /// Last name of the user
     /// </summary>
+    [Required]
     public string LastName { get; set; }
 
     /// <summary>
     /// Hash of the users password
     /// </summary>
-    [NotNull]
+    [Required]
+    [DataType(DataType.Password)]
     public string PasswordHash { get; set; }
 
     /// <summary>
     /// FLags of the user (stores information like if email is verified or 2fa is active)
     /// </summary>
+    [Required]
     public UserFlags Flags { get; set; }
 
     /// <summary>
     /// When was this users account created.
     /// </summary>
+    [Required]
     public DateTime CreationDate
     {
         get => _creationDate;
@@ -91,19 +107,4 @@ public class User : IPamSqlObject
             _ttl = null;
         } 
     }
-
-    /// <summary>
-    /// IPs that are known for this user
-    /// </summary>
-    public List<KnownUserIp> KnownIps { get; set; }
-
-    /// <summary>
-    /// Projects that this user is part of
-    /// </summary>
-    public List<ProjectUser> Projects { get; set; }
-
-    /// <summary>
-    /// Two factor authentications for users
-    /// </summary>
-    public List<TwoFactorUser> TwoFactorAuths { get; set; }
 }

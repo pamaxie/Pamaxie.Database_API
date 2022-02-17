@@ -11,9 +11,10 @@ namespace Pamaxie.Database.Native.Sql;
 /// <summary>
 /// Stores known Ips users connected from
 /// </summary>
+[Index(nameof(UserId), nameof(IpAddress))]
 public class KnownUserIp : IPamSqlObject
 {
-    private static IdGenerator KnownIpsIdsGenerator = new IdGenerator(4);
+    internal static IdGenerator KnownIpsIdsGenerator = new IdGenerator(4);
     private DateTime? _ttl;
 
     public KnownUserIp()
@@ -29,7 +30,7 @@ public class KnownUserIp : IPamSqlObject
     /// <summary>
     /// User who logged in with this IP previously
     /// </summary>
-    public User User { get; set; }
+    public long UserId { get; set; }
     
     /// <summary>
     /// IP address of new login
