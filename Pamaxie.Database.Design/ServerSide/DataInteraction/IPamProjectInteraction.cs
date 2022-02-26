@@ -85,7 +85,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// </summary>
         /// <param name="userId">User to add</param>
         /// <returns>Api token that was auto generated for the user (login credential)</returns>
-        public string AddToken(long projectId);
+        public string CreateToken(long projectId);
         
         /// <summary>
         /// Adds a Api Token to a project

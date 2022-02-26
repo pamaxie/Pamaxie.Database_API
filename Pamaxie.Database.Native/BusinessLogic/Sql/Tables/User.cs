@@ -79,6 +79,18 @@ public class User : IPamSqlObject
     /// </summary>
     [Required]
     public UserFlags Flags { get; set; }
+    
+    /// <summary>
+    /// Does this user have access to our closed access system (closed beta features / functionality)
+    /// </summary>
+    [Required]
+    public bool HasClosedAccess { get; set; }
+    
+    /// <summary>
+    /// Is this user using closed access features?
+    /// </summary>
+    [Required]
+    public bool UsingClosedAccess { get; set; }
 
     /// <summary>
     /// When was this users account created.

@@ -36,7 +36,7 @@
 
   <ItemGroup>
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="1.1.11" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.2" />
     <PackageReference Include="Pamaxie.Authentication" Version="6.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
   </ItemGroup>

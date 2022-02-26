@@ -43,7 +43,7 @@ var project = new PamProject
 
 driver.Service.Projects.Create(project);
 
-var apiToken = driver.Service.Projects.AddToken(project.Id);
+var apiToken = driver.Service.Projects.CreateToken(project.Id);
 
 
 Console.WriteLine("Don");

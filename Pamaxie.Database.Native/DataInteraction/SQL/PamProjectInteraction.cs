@@ -65,8 +65,6 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         
         return base.UpdateOrCreate(data);
     }
-    
-    
 
     public IPamProject LoadOwner(IPamProject item)
     {
@@ -198,7 +196,7 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         return HasPermission(projectId, 0, username, permissions);
     }
 
-    public string AddToken(long projectId)
+    public string CreateToken(long projectId)
     {
         if (projectId <= 0)
         {
@@ -217,6 +215,8 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
             ///Expiration timeout if not used.
             TTL = DateTime.Now.AddMonths(6)
         });
+
+        context.SaveChanges();
 
         return pw;
     }
@@ -309,6 +309,7 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         var projectUser = context.ProjectUsers.FirstOrDefault(x => x.UserId == userId && x.ProjectId == projectId);
         projectUser.Permissions = newPermissions;
         context.SaveChanges();
+        
         return true;
     }
 
@@ -339,6 +340,7 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         var projectUser = context.ProjectUsers.FirstOrDefault(x => x.UserId == userId && x.ProjectId == projectId);
         context.ProjectUsers.Remove(projectUser);
         context.SaveChanges();
+        
         return true;
     }
 
@@ -363,11 +365,6 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
             throw new InvalidOperationException("Please reach in either a username or a user id.");
         }
 
-        return HasPermission(user, permissions);
-    }
-    
-    private bool HasPermission(ProjectUser user, ProjectPermissions permissions)
-    {
         if (user.Permissions >= permissions)
         {
             return true;
@@ -375,8 +372,8 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
 
         return false;
     }
-        
-        
+
+
     public static RandomNumberGenerator RngGenerator =  System.Security.Cryptography.RandomNumberGenerator.Create();
     
     private static string CreatePassword()

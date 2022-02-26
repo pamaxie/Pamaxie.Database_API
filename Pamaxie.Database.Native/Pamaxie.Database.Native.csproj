@@ -25,8 +25,8 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.2" />
-    <PackageReference Include="Pamaxie.Data" Version="6.3.13" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.3" />
+    <PackageReference Include="Pamaxie.Data" Version="6.3.14" />
     <PackageReference Include="Spectre.Console" Version="0.43.0" />
     <PackageReference Include="StackExchange.Redis" Version="2.2.88" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.2">
