@@ -18,7 +18,7 @@ using StackExchange.Redis;
 namespace Pamaxie.Database.Native;
 
 /// <inheritdoc cref="IPamaxieDatabaseService"/>
-internal sealed class PamaxieDatabaseService : IPamaxieDatabaseService
+public sealed class PamaxieDatabaseService : IPamaxieDatabaseService
 {
     private readonly PamaxieDatabaseDriver _owner;
     internal PamaxieDatabaseService(PamaxieDatabaseDriver owner)

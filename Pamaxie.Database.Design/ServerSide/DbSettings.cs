@@ -9,7 +9,7 @@ namespace Pamaxie.Database.Extensions
     /// <summary>
     /// This is the public object that stores the database settings for each database
     /// </summary>
-    public class PamaxieDatabaseClientSettings
+    public class DbSettings
     {
         /// <summary>
         /// Unique GUID to identify the database

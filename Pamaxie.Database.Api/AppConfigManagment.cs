@@ -4,84 +4,107 @@ using Pamaxie.Authentication;
 using Pamaxie.Database.Extensions;
 using Spectre.Console;
 using System;
+using System.IO;
 using System.Linq;
+using System.Net.Mime;
+using Tomlyn;
 
 namespace Pamaxie.Database.Api
 {
     /// <summary>
     /// Configuration setup for the Database Api
     /// </summary>
-    public class ApiApplicationConfiguration
+    public class AppConfigManagment
     {
+        
+        internal static bool InDocker => Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+        
         /// <summary>
         /// Settings that hold the configuration for database access
         /// </summary>
-        public const string DbSettingsEnvVar = "7812_PamaxieDbApi_DbSettings";
+        internal const string DbSettingsEnvVar = "7812_PamaxieDbApi_DbSettings";
 
         /// <summary>
         /// Settings that hold the configuration for the jwt settings
         /// </summary>
-        public const string JwtSettingsEnvVar = "7812_PamaxieDbApi_AuthSettings";
+        internal const string JwtSettingsEnvVar = "7812_PamaxieDbApi_AuthSettings";
+        
+        /// <summary>
+        /// Settings file name for getting it
+        /// </summary>
+        internal const string SettingsFileName = "PamSettings.conf";
 
         /// <summary>
         /// Holds the Database settings
         /// </summary>
-        public static string DbSettings;
+        internal static DbSettings DbSettings;
 
         /// <summary>
         /// Holds the settings for Jwt token Generation
         /// </summary>
-        public static string JwtSettings;
+        internal static JwtTokenConfig JwtSettings;
 
         /// <summary>
         /// Validates that the settings exist and are correct
         /// </summary>
         /// <returns></returns>
-        public static bool ValidateConfiguration(IConfiguration configuration, out string additionalIssue)
-
+        public static bool ValidateConfiguration(out string additionalIssue)
         {
             var ruler = new Rule("[blue]Pamaxie Database API[/]");
-            ruler.Alignment = Justify.Left;
-            AnsiConsole.Render(ruler);
-
-
+            AnsiConsole.Write(ruler);
             additionalIssue = string.Empty;
+            AnsiConsole.Write("[green]Validating Config...[/]");
 
-            var dbSettings = Environment.GetEnvironmentVariable(DbSettingsEnvVar, EnvironmentVariableTarget.User);
-            var jwtSettings = Environment.GetEnvironmentVariable(JwtSettingsEnvVar, EnvironmentVariableTarget.User);
-            if (string.IsNullOrWhiteSpace(jwtSettings) || string.IsNullOrWhiteSpace(dbSettings))
+            if (InDocker)
             {
-                ruler = new Rule("Settings validation");
-                ruler.Alignment = Justify.Left;
-                AnsiConsole.Render(ruler);
+                var dbSettings = Environment.GetEnvironmentVariable(DbSettingsEnvVar, EnvironmentVariableTarget.User);
+                var jwtSettings = Environment.GetEnvironmentVariable(JwtSettingsEnvVar, EnvironmentVariableTarget.User);
 
-                if (!AnsiConsole.Confirm("[yellow]It seems like parts of the conifugration are missing or it hasn't been created yet. \n" +
-                    "We require a configuration for the JwtBearer settings and database to run this software. \n" +
-                    "Do you want to create the missing settings now?[/]"))
+                if (string.IsNullOrWhiteSpace(dbSettings) || string.IsNullOrWhiteSpace(jwtSettings))
                 {
-                    AnsiConsole.WriteLine("No configuration exists, please manually or automatically create a configuration before continuing. Startup failed.");
-                    return false;
-                }
+                    AnsiConsole.Write("[yellow]We could not find part of your configuration. " +
+                                      "We will try to regenerate it now for you[/]");
 
-                MissingSettings missingSettings = 0;
-
-                if (string.IsNullOrWhiteSpace(dbSettings))
-                {
-                    missingSettings += (int)MissingSettings.Database;
-                }
-                if (string.IsNullOrWhiteSpace(jwtSettings))
-                {
-                    missingSettings += (int)MissingSettings.JwtBearer;
-                }
-
-                while (true)
-                {
-                   if (GenerateConfig(missingSettings))
+                    if (string.IsNullOrWhiteSpace(dbSettings))
                     {
-                        break;
+                        if (GenerateConfig(MissingSettings.Database))
+                        {
+                            additionalIssue =
+                                "Could not generate the Missing Database settings from the existing environment" +
+                                "variables. Please recreate the docker container to fix this issue.";
+                            return false;
+                        }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(jwtSettings))
+                    {
+                        if (GenerateConfig(MissingSettings.JwtBearer))
+                        {
+                            additionalIssue =
+                                "Could not generate the missing JwtBearer settings from the existing environment" +
+                                "variables. Please recreate the docker container to fix this issue.";
+                            return false;
+                        }
                     }
                 }
+
+                return true;
             }
+
+            if (!File.Exists(SettingsFileName))
+            {
+                AnsiConsole.Write("[yellow]We could not find any existing configuration. Creating one now[/]");
+                
+                if (!GenerateConfig(MissingSettings.None))
+                {
+                    additionalIssue =
+                        "Could not successfully generate client settings. " +
+                        "Please ensure your input was correct and you didn't interrupt the configuration generation.";
+                    return false;
+                }
+            }
+            
+            
 
             return true;
         }
@@ -92,8 +115,53 @@ namespace Pamaxie.Database.Api
         /// <returns></returns>
         internal static void LoadConfiguration()
         {
-            DbSettings = Environment.GetEnvironmentVariable(DbSettingsEnvVar, EnvironmentVariableTarget.User);
-            JwtSettings = Environment.GetEnvironmentVariable(JwtSettingsEnvVar, EnvironmentVariableTarget.User);
+            if (InDocker)
+            {
+                var dbSettings = Environment.GetEnvironmentVariable(DbSettingsEnvVar, EnvironmentVariableTarget.Machine);
+                var jwtSettings = Environment.GetEnvironmentVariable(JwtSettingsEnvVar, EnvironmentVariableTarget.Machine);
+                
+                if (string.IsNullOrWhiteSpace(dbSettings) || string.IsNullOrWhiteSpace(jwtSettings))
+                {
+                    throw new Exception("The settings could not be found. Please ensure the docker container " +
+                                        "was configured properly and that the enviorement User-Level " +
+                                        "Environment-Variables with the name: {DbSettingsEnvVar} " +
+                                        "and {JwtSettingsEnvVar} are set.");
+                }
+
+                JwtSettings = JsonConvert.DeserializeObject<JwtTokenConfig>(jwtSettings);
+                DbSettings = JsonConvert.DeserializeObject<DbSettings>(dbSettings);
+                return;
+            }
+
+            if (File.Exists(SettingsFileName))
+            {
+                var configText = File.ReadAllText(SettingsFileName);
+
+                if (string.IsNullOrWhiteSpace(configText))
+                {
+                    throw new Exception("After reading the configuration file it was empty. Please ensure" +
+                                        "the configuration is correct and properly stored.");
+                }
+                
+                var settingsModel = Toml.ToModel(configText);
+                var dbSettings = (string) settingsModel["DbSettings"]!;
+                var jwtSettings = (string) settingsModel["JwtSettings"]!;
+
+                if (string.IsNullOrWhiteSpace(dbSettings) || (string.IsNullOrWhiteSpace(jwtSettings)))
+                {
+                    throw new Exception("After reading the database file we could not find the configuration " +
+                                        "path for the Database or Jwt Settings. Please ensure both of them exist.");
+                }
+
+                DbSettings = Toml.ToModel<DbSettings>(dbSettings);
+                JwtSettings = Toml.ToModel<JwtTokenConfig>(jwtSettings);
+            }
+            else
+            {
+                throw new Exception(
+                    $"The settings file could not be read. Please ensure the settings " +
+                    $"file with the name {SettingsFileName} exists in the executable directory");
+            }
         }
 
         /// <summary>

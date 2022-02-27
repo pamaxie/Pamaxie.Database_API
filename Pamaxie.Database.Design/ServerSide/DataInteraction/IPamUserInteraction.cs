@@ -11,7 +11,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <summary>
         /// Gets a user via their username
         /// </summary>
-        /// <param name="usernName">username of the user</param>
+        /// <param name="username">username of the user</param>
         /// <returns></returns>
         public IPamUser Get(string username);
 
@@ -43,29 +43,47 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         public IPamUser LoadProjects(IPamUser user);
 
         /// <summary>
-        /// Gets the <see cref="user"/> <see cref="PamProjectPermissions"/> for the project with the reached in <see cref="projectName"/>
+        /// Gets the <see cref="user"/> <see>
+        ///     <cref>PamProjectPermissions</cref>
+        /// </see>
+        /// for the project with the reached in <see cref="projectName"/>
         /// </summary>
         /// <param name="projectName">Name of the project</param>
         /// <param name="user">User to get the permissions of</param>
-        /// <returns><see cref="PamProjectPermissions"/> of the user</returns>
+        /// <returns><see>
+        ///         <cref>PamProjectPermissions</cref>
+        ///     </see>
+        ///     of the user</returns>
         public ProjectPermissions GetProjectPermissions(string projectName, IPamUser user);
-        
+
         /// <summary>
-        /// Gets the <see cref="user"/> <see cref="PamProjectPermissions"/> for the project with the reached in <see cref="projectId"/>
+        /// Gets the <see cref="user"/> <see>
+        ///     <cref>PamProjectPermissions</cref>
+        /// </see>
+        /// for the project with the reached in <see cref="projectId"/>
         /// </summary>
         /// <param name="projectId">Id of the Project</param>
         /// <param name="user">User to get the permissions of</param>
-        /// <returns><see cref="PamProjectPermissions"/> of the user</returns>
+        /// <returns><see>
+        ///         <cref>PamProjectPermissions</cref>
+        ///     </see>
+        ///     of the user</returns>
         public ProjectPermissions GetProjectPermissions(long projectId, IPamUser user);
 
         /// <summary>
-        /// Loads the <see cref="users"/> Two Factor options
+        /// Loads the <see>
+        ///     <cref>users</cref>
+        /// </see>
+        /// Two Factor options
         /// </summary>
         /// <param name="user">User to get the Two factor options from</param>
         public IPamUser LoadTwoFactorOptions(IPamUser user);
-        
+
         /// <summary>
-        /// Loads the <see cref="users"/> known Ips for the user
+        /// Loads the <see>
+        ///     <cref>users</cref>
+        /// </see>
+        /// User to load the known IPs of
         /// </summary>
         /// <param name="user">User to get the Two factor options from</param>
         public IPamUser LoadKnownIps(IPamUser user);
@@ -74,8 +92,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// Checks if the Ip Address for the user is known
         /// </summary>
         /// <param name="user">User to check the IP address for</param>
-        /// <param name="ipAddress"></param>
-        /// <param name="ipAddr">Ip address of the user</param>
+        /// <param name="ipAddress">Ip address to check for</param>
         public bool IsIpKnown(IPamUser user, string ipAddress);
         
 

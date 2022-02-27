@@ -47,34 +47,46 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <summary>
         /// Checks if a user has certain project permissions
         /// </summary>
-        /// <param name="permissions"><see cref="PamProjectPermissions"/> flags enum which permissions should be validated</param>
+        /// <param name="permissions"><see>
+        ///         <cref>PamProjectPermissions</cref>
+        ///     </see>
+        ///     flags enum which permissions should be validated</param>
         /// <param name="username">username of the user which permissions should be validated</param>
         /// <param name="project">project that the permissions should be validated against</param>
         /// <returns></returns>
         public bool HasPermission(IPamProject project, ProjectPermissions permissions, string username);
-        
+
         /// <summary>
         /// Checks if a user has certain project permissions
         /// </summary>
-        /// <param name="permissions"><see cref="PamProjectPermissions"/> flags enum which permissions should be validated</param>
+        /// <param name="permissions"><see>
+        ///         <cref>PamProjectPermissions</cref>
+        ///     </see>
+        ///     flags enum which permissions should be validated</param>
         /// <param name="userId">Id of the user which permissions should be validated</param>
         /// <param name="projectId">project id that the permissions should be validated against</param>
         /// <returns></returns>
         public bool HasPermission(long projectId, ProjectPermissions permissions, long userId);
-        
+
         /// <summary>
         /// Checks if a user has certain project permissions
         /// </summary>
-        /// <param name="permissions"><see cref="PamProjectPermissions"/> flags enum which permissions should be validated</param>
+        /// <param name="permissions"><see>
+        ///         <cref>PamProjectPermissions</cref>
+        ///     </see>
+        ///     flags enum which permissions should be validated</param>
         /// <param name="userId">Id of the user which permissions should be validated</param>
         /// <param name="project">project that the permissions should be validated against</param>
         /// <returns></returns>
         public bool HasPermission(IPamProject project, ProjectPermissions permissions, long userId);
-        
+
         /// <summary>
         /// Checks if a user has certain project permissions
         /// </summary>
-        /// <param name="permissions"><see cref="PamProjectPermissions"/> flags enum which permissions should be validated</param>
+        /// <param name="permissions"><see>
+        ///         <cref>PamProjectPermissions</cref>
+        ///     </see>
+        ///     flags enum which permissions should be validated</param>
         /// <param name="username">username of the user which permissions should be validated</param>
         /// <param name="projectId">project id that the permissions should be validated against</param>
         /// <returns></returns>
@@ -83,14 +95,15 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <summary>
         /// Removes a Api Token to a project
         /// </summary>
-        /// <param name="userId">User to add</param>
+        /// <param name="projectId">Id of the project to create a token for</param>
         /// <returns>Api token that was auto generated for the user (login credential)</returns>
         public string CreateToken(long projectId);
-        
+
         /// <summary>
         /// Adds a Api Token to a project
         /// </summary>
-        /// <param name="userId">User to add</param>
+        ///<param name="projectId">Id of the project to remove the token from</param>
+        /// <param name="tokenId">Id of the token to remove</param>
         /// <returns></returns>
         public bool RemoveToken(long projectId, long tokenId);
 
@@ -102,19 +115,22 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <param name="newPermissions"></param>
         /// <returns></returns>
         public bool SetPermissions(long projectId, long userId, ProjectPermissions newPermissions);
-        
+
         /// <summary>
         /// Adds a user to a project
         /// </summary>
+        /// <param name="projectId">Id of the project to add the user to</param>
         /// <param name="userId">User to add</param>
+        /// <param name="permissions">permissions the user has in the project</param>
         /// <returns></returns>
         public bool AddUser(long projectId, long userId, ProjectPermissions permissions);
-        
-        /// <summary>
-        /// Removes a user to a project
-        /// </summary>
-        /// <param name="user">User to remove</param>
-        /// <returns></returns>
+
+        ///  <summary>
+        ///  Removes a user to a project
+        ///  </summary>
+        /// <param name="projectId">Id of the project the user is removed from</param>
+        ///  <param name="userId">Id of the user that should be removed from the project</param>
+        ///  <returns></returns>
         public bool RemoveUser(long projectId, long userId);
     }
 }

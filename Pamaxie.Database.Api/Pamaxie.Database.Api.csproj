@@ -37,12 +37,14 @@
   <ItemGroup>
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="1.1.11" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.2" />
-    <PackageReference Include="Pamaxie.Authentication" Version="6.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.3" />
+    <PackageReference Include="Tomlyn" Version="0.12.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Pamaxie.Authentication\Pamaxie.Authentication.csproj" />
     <ProjectReference Include="..\Pamaxie.Database.Design\Pamaxie.Database.Design.csproj" />
+    <ProjectReference Include="..\Pamaxie.Database.Native\Pamaxie.Database.Native.csproj" />
   </ItemGroup>
 
   <ItemGroup>

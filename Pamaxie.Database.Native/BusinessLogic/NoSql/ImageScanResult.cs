@@ -12,15 +12,13 @@ public class ImageScanResult : IPamNoSqlObject
 {
     public static RandomNumberGenerator RngGenerator =  System.Security.Cryptography.RandomNumberGenerator.Create();
     
-    public ImageScanResult(string ownerKey)
+    public ImageScanResult(string dataHash)
     {
-        byte[] tokenBuffer = new byte[64];
-        RngGenerator.GetNonZeroBytes(tokenBuffer);
-        Key = Convert.ToBase64String(tokenBuffer);
-        OwnerKey = ownerKey;
+        DataHash = dataHash;
+        Key = $"{dataHash}-imgScanResult";
     }
     
-    public string OwnerKey { get; set; }
+    public string DataHash { get; set; }
     public string Key { get; set; }
     public string DetectedShieldLabel { get; set; }
     public float DetectedShieldLabelLikelihood { get; set; }

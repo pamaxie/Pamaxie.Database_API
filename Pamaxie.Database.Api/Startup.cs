@@ -29,6 +29,7 @@ namespace Pamaxie.Api
         {
             Configuration = configuration;
         }
+        
 
         private IConfiguration Configuration { get; }
 
@@ -38,41 +39,32 @@ namespace Pamaxie.Api
         /// <param name="services"><see cref="IServiceCollection"/> to add</param>
         public void ConfigureServices(IServiceCollection services)
         {
-            if (!ApiApplicationConfiguration.ValidateConfiguration(Configuration, out var issue))
+            if (!AppConfigManagment.ValidateConfiguration(out var issue))
             {
                 Console.WriteLine(
-                    "The applications configuration was in an incorrect or unaccepted format. The detailed problem was: \n" +
+                    "The applications configuration was in an incorrect or unaccepted format. The detailed problem was: \n" + 
                     issue);
-                //TODO: add status code 501 to the list of status codes as "wrong configuration"
                 System.Environment.Exit(-501);
             }
 
-            ApiApplicationConfiguration.LoadConfiguration();
+            AppConfigManagment.LoadConfiguration();
             services.AddControllers();
-
-            var dbSettings = JsonConvert.DeserializeObject<PamaxieDatabaseClientSettings>(Environment.GetEnvironmentVariable(ApiApplicationConfiguration.DbSettingsEnvVar, EnvironmentVariableTarget.User));
-            var jwtSettings = JsonConvert.DeserializeObject<JwtTokenConfig>(Environment.GetEnvironmentVariable(ApiApplicationConfiguration.JwtSettingsEnvVar, EnvironmentVariableTarget.User));
-            byte[] key = Encoding.ASCII.GetBytes(jwtSettings.Secret);
-            services.AddAuthentication(x =>
-                    {
+            var dbSettings = new DbSettings();
+            services.AddAuthentication(x => {
                     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                    })
-                    .AddJwtBearer(x =>
-                    {
+                    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme; })
+                    .AddJwtBearer(x => {
                     x.RequireHttpsMetadata = false;
                     x.SaveToken = true;
-                    x.RefreshInterval = new TimeSpan(0, jwtSettings.ExpiresInMinutes, 0);
-                    x.TokenValidationParameters = new TokenValidationParameters
-                    {
+                    x.RefreshInterval = new TimeSpan(0, AppConfigManagment.JwtSettings.ExpiresInMinutes, 0);
+                    x.TokenValidationParameters = new TokenValidationParameters {
                         ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(key),
+                        IssuerSigningKey = AppConfigManagment.JwtSettings.SymmetricSecurityKey,
                         ValidateIssuer = true,
                         ValidateAudience = true,
                         ValidateLifetime = true,
                         ValidIssuer = "Pamaxie",
-                        ValidAudience = "Pamaxie"
-                    };
+                        ValidAudience = "Pamaxie-API"}; 
                     });
 
             services.AddSwaggerGen(o => {

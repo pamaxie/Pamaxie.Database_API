@@ -10,14 +10,10 @@ namespace Pamaxie.Database.Native.NoSql;
 /// </summary>
 public class ScanData : IPamNoSqlObject
 {
-    public static RandomNumberGenerator RngGenerator =  System.Security.Cryptography.RandomNumberGenerator.Create();
-    
-    public ScanData(string scanResultKey)
+    public ScanData(string dataHash, string scanResultKey)
     {
-        byte[] tokenBuffer = new byte[64];
-        RngGenerator.GetNonZeroBytes(tokenBuffer);
-        Key = Convert.ToBase64String(tokenBuffer);
-        ScanResultKey = Key;
+        Key = dataHash;
+        ScanResultKey = scanResultKey;
     }
     
     public string Key { get; set; }
