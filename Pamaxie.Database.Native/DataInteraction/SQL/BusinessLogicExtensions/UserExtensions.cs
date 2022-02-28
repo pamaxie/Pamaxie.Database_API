@@ -1,4 +1,5 @@
-﻿using Pamaxie.Data;
+﻿using System.Threading.Tasks;
+using Pamaxie.Data;
 using Pamaxie.Database.Native.Sql;
 
 namespace Pamaxie.Database.Native.DataInteraction.BusinessLogicExtensions;
@@ -42,10 +43,10 @@ public static class UserExtensions
         return pamUser;
     }
     
-    public static User LoadDbUser(this IPamUser user)
+    public static async Task<User> LoadDbUserAsync(this IPamUser user)
     {
         PamSqlInteractionBase<User> sqlInteractionBase = new();
-        var userObj = sqlInteractionBase.Get(user.Id);
+        var userObj = await sqlInteractionBase.GetAsync(user.Id);
 
         if (userObj is not User dbUser)
         {

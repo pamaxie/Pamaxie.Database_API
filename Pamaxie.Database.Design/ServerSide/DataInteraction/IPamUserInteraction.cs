@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using Pamaxie.Data;
 
 namespace Pamaxie.Database.Extensions.DataInteraction
@@ -13,34 +14,34 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// </summary>
         /// <param name="username">username of the user</param>
         /// <returns></returns>
-        public IPamUser Get(string username);
+        public Task<IPamUser> GetAsync(string username);
 
         /// <summary>
         /// Does the username exist in our database
         /// </summary>
         /// <param name="username"></param>
         /// <returns></returns>
-        public bool ExistsUsername(string username);
+        public Task<bool> ExistsUsernameAsync(string username);
         
         /// <summary>
         /// Does the email exist in our database
         /// </summary>
         /// <param name="email"></param>
         /// <returns></returns>
-        public bool ExistsEmail(string email);
+        public Task<bool> ExistsEmailAsync(string email);
         
         /// <summary>
         /// Loads the user completely
         /// </summary>
         /// <param name="user"></param>
         /// <returns></returns>
-        public IPamUser LoadFully(IPamUser user);
+        public Task<IPamUser> LoadFullyAsync(IPamUser user);
         
         /// <summary>
         /// Loads the <see cref="IPamUser.Projects"/> property
         /// </summary>
         /// <returns><see cref="IPamUser"/> with their <see cref="IPamUser.Projects"/> property loaded</returns>
-        public IPamUser LoadProjects(IPamUser user);
+        public Task<IPamUser> LoadProjectsAsync(IPamUser user);
 
         /// <summary>
         /// Gets the <see cref="user"/> <see>
@@ -54,7 +55,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         ///         <cref>PamProjectPermissions</cref>
         ///     </see>
         ///     of the user</returns>
-        public ProjectPermissions GetProjectPermissions(string projectName, IPamUser user);
+        public Task<ProjectPermissions> GetProjectPermissionsAsync(string projectName, IPamUser user);
 
         /// <summary>
         /// Gets the <see cref="user"/> <see>
@@ -68,7 +69,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         ///         <cref>PamProjectPermissions</cref>
         ///     </see>
         ///     of the user</returns>
-        public ProjectPermissions GetProjectPermissions(long projectId, IPamUser user);
+        public Task<ProjectPermissions> GetProjectPermissionsAsync(long projectId, IPamUser user);
 
         /// <summary>
         /// Loads the <see>
@@ -77,7 +78,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// Two Factor options
         /// </summary>
         /// <param name="user">User to get the Two factor options from</param>
-        public IPamUser LoadTwoFactorOptions(IPamUser user);
+        public Task<IPamUser> LoadTwoFactorOptionsAsync(IPamUser user);
 
         /// <summary>
         /// Loads the <see>
@@ -86,14 +87,14 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// User to load the known IPs of
         /// </summary>
         /// <param name="user">User to get the Two factor options from</param>
-        public IPamUser LoadKnownIps(IPamUser user);
+        public Task<IPamUser> LoadKnownIpsAsync(IPamUser user);
 
         /// <summary>
         /// Checks if the Ip Address for the user is known
         /// </summary>
         /// <param name="user">User to check the IP address for</param>
         /// <param name="ipAddress">Ip address to check for</param>
-        public bool IsIpKnown(IPamUser user, string ipAddress);
+        public Task<bool> IsIpKnownAsync(IPamUser user, string ipAddress);
         
 
         /// <summary>
@@ -101,6 +102,6 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// </summary>
         /// <param name="username"><see cref="IPamUser"/>'s username to get the keys from</param>
         /// <returns>unique key</returns>
-        public long GetUniqueKey(string username);
+        public Task<long> GetUniqueKeyAsync(string username);
     }
 }

@@ -19,7 +19,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Costura.Fody" Version="5.7.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="EFCore.NamingConventions" Version="6.0.0" />
+    <PackageReference Include="Fody" Version="6.6.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="IdGen" Version="3.0.0" />
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="1.1.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.2" />

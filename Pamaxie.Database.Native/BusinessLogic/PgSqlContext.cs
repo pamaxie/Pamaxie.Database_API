@@ -9,6 +9,11 @@ namespace Pamaxie.Database.Native;
 
 public class PgSqlContext : DbContext
 {
+    public PgSqlContext()
+    {
+        
+    }
+
     /// <summary>
     /// Connection string used for the database
     /// </summary>

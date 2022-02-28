@@ -40,7 +40,7 @@ namespace Pamaxie.Database.Extensions
 
         public static IPamaxieDatabaseDriver LoadDatabaseDriver(Guid driverGuid)
         {
-            var callingProcessPath = new FileInfo(Environment.ProcessPath).DirectoryName;
+            var callingProcessPath = PamaxieEnviorement.GetExecutingAssemblyDirectory();
             var files = Directory.GetFiles(callingProcessPath, "*.dll");
 
             foreach (var file in files)

@@ -1,335 +1,221 @@
-using System.Collections.Generic;
+using System;
+using System.IO;
 using System.Net.Mime;
+using System.Text;
+using System.Threading.Tasks;
+using Isopoh.Cryptography.Argon2;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using Pamaxie.Authentication;
 using Pamaxie.Data;
+using Pamaxie.Database.Extensions;
 
-/*
-namespace Pamaxie.Api.Controllers
+namespace Pamaxie.Database.Api.Controllers;
+
+/// <summary>
+/// Api Controller for handling all <see>
+///     <cref>PamaxieUser</cref>
+/// </see>
+/// interactions
+/// </summary>
+[Authorize]
+[ApiController]
+[Route("[controller]")]
+public sealed class UserController : ControllerBase
 {
+    private readonly JwtTokenGenerator _generator;
+    private readonly IPamaxieDatabaseDriver _dbDriver;
+
     /// <summary>
-    /// Api Controller for handling all <see cref="PamaxieUser"/> interactions
+    /// Constructor for <see cref="UserController"/>
     /// </summary>
-    [Authorize]
-    [ApiController]
-    [Route("[controller]")]
-    public sealed class UserController : ControllerBase
+    /// <param name="generator">Used for generating Jwt tokens for a user</param>
+    /// <param name="dbDriver">Driver for talking to the requested database service</param>
+    public UserController(JwtTokenGenerator generator, IPamaxieDatabaseDriver dbDriver)
     {
-
-        private readonly IPamaxieDatabaseDriver _dbDriver;
-
-        /// <summary>
-        /// Constructor for <see cref="UserController"/>
-        /// </summary>
-        /// <param name="dbDriver">Driver for talking to the requested database service</param>
-        public UserController(IPamaxieDatabaseDriver dbDriver)
-        {
-            _dbDriver = dbDriver;
-        }
-
-        /// <summary>
-        /// Get a <see cref="PamaxieUser"/> from the database by a key
-        /// </summary>
-        /// <param name="key">Unique UniqueKey of the <see cref="PamaxieUser"/></param>
-        /// <returns>A <see cref="PamaxieUser"/> from the database</returns>
-        [Authorize]
-        [HttpGet("Get={key}")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IPamUser))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<IPamUser> GetTask(string key)
-        {
-            if (string.IsNullOrWhiteSpace(key))
-            {
-                return BadRequest();
-            }
-
-            if (!ValidateOwnership(key))
-            {
-                return Unauthorized();
-            }
-
-            if (!_dbDriver.Service.PamaxieApplicationData.Exists(key))
-            {
-                return NotFound();
-            }
-
-            return Ok(_dbDriver.Service.PamaxieUserData.Get(key));
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="PamaxieUser"/> in the database
-        /// </summary>
-        /// <param name="user"><see cref="PamaxieUser"/> to be created</param>
-        /// <returns>Created <see cref="PamaxieUser"/></returns>
-        [Authorize]
-        [HttpPost("Create")]
-        [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(IPamUser))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<IPamUser> CreateTask(IPamUser user)
-        {
-            return NotFound("This endpoint is not avialable for this data type, please use the Auth Controller to create a user.");
-        }
-
-        /// <summary>
-        /// Tries to create a new <see cref="PamaxieUser"/> in the database
-        /// </summary>
-        /// <param name="user"><see cref="PamaxieUser"/> to be created</param>
-        /// <returns>Created <see cref="PamaxieUser"/></returns>
-        [Authorize]
-        [HttpPost("TryCreate")]
-        [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(IPamUser))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<IPamUser> TryCreateTask(IPamUser user)
-        {
-            return NotFound("This endpoint is not avialable for this data type");
-        }
-
-        /// <summary>
-        /// Updates a <see cref="PamaxieUser"/> in the database
-        /// </summary>
-        /// <param name="user">Updated values on <see cref="PamaxieUser"/></param>
-        /// <returns>Updated <see cref="PamaxieUser"/></returns>
-        [Authorize]
-        [HttpPut("Update")]
-        [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PamaxieUser))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<IPamUser> UpdateTask(IPamUser user)
-        {
-            if (user == null)
-            {
-                return BadRequest();
-            }
-
-            if (string.IsNullOrWhiteSpace(user.UniqueKey))
-            {
-                return BadRequest();
-            }
-
-            if (!ValidateOwnership(user.UniqueKey))
-            {
-                return Unauthorized();
-            }
-
-            if (!_dbDriver.Service.PamaxieUserData.Exists(user.UniqueKey))
-            {
-                return NotFound("The user you want to update does not exist.");
-            }
-
-            return Ok(_dbDriver.Service.PamaxieUserData.Update(user));
-        }
-
-        /// <summary>
-        /// Tries to update a <see cref="PamaxieUser"/> in the database
-        /// </summary>
-        /// <param name="user">Updated values on <see cref="PamaxieUser"/></param>
-        /// <returns>Updated <see cref="PamaxieUser"/></returns>
-        [Authorize]
-        [HttpPut("TryUpdate")]
-        [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IPamUser))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<IPamUser> TryUpdateTask(IPamUser user)
-        {
-            if (user == null)
-            {
-                return BadRequest();
-            }
-
-            if (!ValidateOwnership(user.UniqueKey))
-            {
-                return Unauthorized();
-            }
-
-            if (!_dbDriver.Service.PamaxieUserData.Exists(user.UniqueKey))
-            {
-                return NotFound("The user you want to update does not exist.");
-            }
-
-            if (_dbDriver.Service.PamaxieUserData.TryUpdate(user, out var updatedUser))
-            {
-                return Ok(updatedUser);
-            }
-
-            return Problem();
-        }
-
-        /// <summary>
-        /// Tries to update a <see cref="PamaxieUser"/> in the database,
-        /// if the <see cref="PamaxieUser"/> does not exist, then a new one will be created
-        /// </summary>
-        /// <param name="user">The <see cref="PamaxieUser"/> to be created, or updated values on <see cref="PamaxieUser"/></param>
-        /// <returns>Updated or created <see cref="PamaxieUser"/></returns>
-        [Authorize]
-        [HttpPost("UpdateOrCreate")]
-        [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IPamUser))]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(IPamUser))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<IPamUser> UpdateOrCreateTask(IPamUser user)
-        {
-            return NotFound("This endpoint is not avialable for this data type");
-        }
-
-        /// <summary>
-        /// Checks if a <see cref="PamaxieUser"/> exists in the database
-        /// TODO: This should probably not exist. Maybe check if this is required.
-        /// </summary>
-        /// <param name="key">Unique UniqueKey of the <see cref="PamaxieUser"/></param>
-        /// <returns><see cref="bool"/> if <see cref="PamaxieUser"/> exists in the database</returns>
-        [Authorize]
-        [HttpGet("Exists={key}")]
-        [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<bool> ExistsTask(string key)
-        {
-            if (string.IsNullOrWhiteSpace(key))
-            {
-                return BadRequest();
-            }
-
-            if (!ValidateOwnership(key))
-            {
-                return Unauthorized();
-            }
-
-            return Ok(_dbDriver.Service.PamaxieUserData.Exists(key));
-        }
-
-        /// <summary>
-        /// Deletes a <see cref="PamaxieUser"/> in the database
-        /// </summary>
-        /// <param name="user"><see cref="PamaxieUser"/> to be deleted</param>
-        /// <returns><see cref="bool"/> if <see cref="PamaxieUser"/> is deleted</returns>
-        [Authorize]
-        [HttpDelete("Delete")]
-        [Consumes(MediaTypeNames.Application.Json)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<bool> DeleteTask(IPamUser user)
-        {
-            if (user == null)
-            {
-                return BadRequest();
-            }
-
-            if (string.IsNullOrWhiteSpace(user.UniqueKey))
-            {
-                return BadRequest();
-            }
-
-            if (!ValidateOwnership(user.UniqueKey))
-            {
-                return Unauthorized();
-            }
-
-            if (!_dbDriver.Service.PamaxieApplicationData.Exists(user.UniqueKey))
-            {
-                return NotFound();
-            }
-
-            if (_dbDriver.Service.PamaxieUserData.Delete(user))
-            {
-                return Ok(true);
-            }
-
-            return Problem();
-        }
-
-        /// <summary>
-        /// Get all <see cref="PamaxieApplication"/>s the user owns
-        /// </summary>
-        /// <param name="userId">The user to get the applications from</param>
-        /// <returns>A list of all <see cref="PamaxieApplication"/>s the <see cref="PamaxieUser"/> owns</returns>
-        [Authorize]
-        [HttpGet("GetAllApplications={userId}")]
-
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<IPamUser>))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<IEnumerable<IPamUser>> GetAllApplicationsTask(string userId)
-        {
-            if (string.IsNullOrWhiteSpace(userId))
-            {
-                return BadRequest();
-            }
-
-            if (ValidateOwnership(userId))
-            {
-                return Unauthorized();
-            }
-
-            if (!_dbDriver.Service.PamaxieUserData.Exists(userId))
-            {
-                return NotFound();
-            }
-
-            var user = _dbDriver.Service.PamaxieUserData.Get(userId);
-            return Ok(_dbDriver.Service.PamaxieUserData.GetAllApplications(user));
-        }
-
-        /// <summary>
-        /// Verifies the <see cref="PamaxieUser"/>'s email address
-        /// </summary>
-        /// <param name="userId">The user to get the email from and to verify</param>
-        /// <returns><see cref="bool"/> if the user got verified</returns>
-        [Authorize]
-        [HttpPost("VerifyEmail")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(bool))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public ActionResult<bool> VerifyEmailTask(string userId)
-        {
-            if (userId == null)
-            {
-                return BadRequest();
-            }
-
-            if (ValidateOwnership(userId))
-            {
-                return Unauthorized();
-            }
-
-            var user = _dbDriver.Service.PamaxieUserData.Get(userId);
-
-            if (user == null)
-            {
-                return BadRequest();
-            }
-
-            if (_dbDriver.Service.PamaxieUserData.VerifyEmail(user))
-            {
-                return Ok(true);
-            }
-
-            return Problem();
-        }
-
-
-        /// <summary>
-        /// Validates a user owns this resource to modify it
-        /// </summary>
-        /// <param name="assumedUserId"></param>
-        /// <returns></returns>
-        private bool ValidateOwnership(string assumedUserId)
-        {
-            string token = Request.Headers["authorization"];
-            string userId = JwtTokenGenerator.GetUserKey(token);
-            return assumedUserId == userId;
-        }
+        _dbDriver = dbDriver;
+        _generator = generator;
     }
-}*/
+
+
+    /// <summary>
+    /// Signs in a user via Basic authentication and returns a token.
+    /// </summary>
+    /// <returns><see cref="JwtToken"/> Token for Authentication</returns>
+    [AllowAnonymous]
+    [HttpPost("Login")]
+    [Consumes(MediaTypeNames.Application.Json)]
+    public async Task<ActionResult<JwtToken>> LoginTask()
+    {
+        var authHeader = Request.Headers["authorization"].ToString();
+
+        if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Basic"))
+        {
+            return Unauthorized(authHeader ?? string.Empty);
+        }
+
+        var encodedUsernamePassword = authHeader.Substring("Basic ".Length).Trim();
+
+        //the coding should be iso or you could use ASCII and UTF-8 decoder
+        var encoding = Encoding.GetEncoding("iso-8859-1");
+        var usernamePassword = encoding.GetString(Convert.FromBase64String(encodedUsernamePassword));
+        var separatorIndex = usernamePassword.IndexOf(':');
+        var userName = usernamePassword.Substring(0, separatorIndex);
+        var userPass = usernamePassword.Substring(separatorIndex + 1);
+
+        var user = await _dbDriver.Service.Users.GetAsync(userName);
+
+        if (!await ValidateUserAccessAsync(user.Id, userPass))
+        {
+            return Unauthorized(
+                "User is not authorized to login, this maybe due to an invalid username or password" +
+                "or the user being locked out of our system. If you are sure your credentials are correct" +
+                "please contact support.");
+        }
+
+        var newToken = _generator.CreateToken(user.Id, AppConfigManagement.JwtSettings);
+        return Ok(newToken);
+    }
+
+    /// <summary>
+    /// Creates a new Api User, needs to be unauthorized
+    /// </summary>
+    /// <returns><see cref="string"/> Success?</returns>
+    [AllowAnonymous]
+    [HttpPost("Create")]
+    [Consumes(MediaTypeNames.Application.Json)]
+    public async Task<ActionResult<string>> CreateUserTask()
+    {
+        using var reader = new StreamReader(HttpContext.Request.Body);
+        var body = await reader.ReadToEndAsync();
+
+        if (string.IsNullOrWhiteSpace(body))
+        {
+            return BadRequest("Please specify a user to create");
+        }
+
+        var user = JsonConvert.DeserializeObject<PamUser>(body);
+
+        if (user == null)
+        {
+            return BadRequest("Expected a PamUser object for creation as the body but couldn't find one. Please" +
+                              "ensure your Json is correct.");
+        }
+
+
+        if (await _dbDriver.Service.Users.ExistsUsernameAsync(user.UserName) ||
+            await _dbDriver.Service.Users.ExistsEmailAsync(user.Email))
+        {
+            return Conflict("The specified username or email already exists in our database. " +
+                            "Please make sure they are unique.");
+        }
+
+        //By default we are not granting close access at the moment.
+        user.HasClosedAccess = false;
+        user.Flags = UserFlags.None;
+
+        var wasSuccess = await _dbDriver.Service.Users.CreateAsync(user);
+
+        if (wasSuccess)
+        {
+        }
+        else
+        {
+            return StatusCode(500, "Unable to create the user because of an unexpected error during creation. " +
+                                   "Please contact your server administrator");
+        }
+
+        return Created("/users", null);
+    }
+
+    /// <summary>
+    /// Refreshes an exiting <see cref="JwtToken"/>
+    /// </summary>
+    /// <returns>Refreshed <see cref="JwtToken"/></returns>
+    [Authorize]
+    [HttpPost("RefreshToken")]
+    [Consumes(MediaTypeNames.Application.Json)]
+    public async Task<ActionResult<JwtToken>> RefreshTask()
+    {
+        var token = Request.Headers["authorization"];
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            return Unauthorized();
+        }
+
+        var userKey = JwtTokenGenerator.GetUserKey(token);
+
+        if (long.TryParse(userKey, out var userId))
+        {
+            return BadRequest("The entered token does not contain a valid user ID that can be read from it. " +
+                              "Please ensure this token is meant for this application and hasn't been tampered with.");
+        }
+
+        //Validate if the user was maybe deleted since the last auth
+        if (!await ValidateUserAccessAsync(userId))
+        {
+            return Unauthorized(
+                "The token you entered is incorrect or the user of the Token was locked out of our system." +
+                "Please check your credentials. If you are sure they are correct please contact support.");
+        }
+
+        var newToken = _generator.CreateToken(userId, AppConfigManagement.JwtSettings);
+        return Ok(newToken);
+    }
+    
+    /// <summary>
+    /// Refreshes an exiting <see cref="JwtToken"/>
+    /// </summary>
+    /// <returns>Refreshed <see cref="JwtToken"/></returns>
+    [Authorize]
+    [HttpPost("Get")]
+    public async Task<ActionResult<JwtToken>> Get()
+    {
+        throw new NotImplementedException();
+    }
+
+    private async Task<bool> ValidateUserAccessAsync(long userId, string password = null)
+    {
+        //User does not exist in our Database.
+        if (!await _dbDriver.Service.Users.ExistsAsync(userId))
+        {
+            return false;
+        }
+
+        var userObj = await _dbDriver.Service.Users.GetAsync(userId);
+
+        //User object isn't correct which may mean wrong type of ID was entered
+        if (userObj is not IPamUser user)
+        {
+            return false;
+        }
+
+        //The users account has not been verified.
+        if (!user.Flags.HasFlag(UserFlags.ConfirmedAccount))
+        {
+            return false;
+        }
+
+        //The users account has been locked by our moderation team
+        if (!user.Flags.HasFlag(UserFlags.Locked))
+        {
+            return false;
+        }
+
+        //Closed access is currently required to access our service
+        if (!user.HasClosedAccess)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            return true;
+        }
+
+        return Argon2.Verify(user.PasswordHash, password);
+    }
+}

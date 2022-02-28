@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using System.Net;
 using System.Security.Cryptography;
-using System.Text;
+using System.Threading.Tasks;
 using Isopoh.Cryptography.Argon2;
 using Pamaxie.Data;
 using Pamaxie.Database.Extensions.DataInteraction;
@@ -15,14 +12,14 @@ namespace Pamaxie.Database.Native.DataInteraction;
 
 public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProjectInteraction
 {
-    public override IPamSqlObject Get(long uniqueKey)
+    public override async Task<IPamSqlObject> GetAsync(long uniqueKey)
     {
         if (uniqueKey <= 0)
         {
             throw new ArgumentException("Invalid unique Key for the Project", nameof(uniqueKey));
         }
         
-        var item = base.Get(uniqueKey);
+        var item = await base.GetAsync(uniqueKey);
         
         if (item is not Project project)
         {
@@ -32,52 +29,47 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         return project.ToIPamProject();
     }
 
-    public override bool Create(IPamSqlObject data)
+    public  override async Task<bool> CreateAsync(IPamSqlObject data)
     {
-        using var context = new PgSqlContext();
+        await using var context = new PgSqlContext();
         
         if (data is Project project)
         {
             context.ProjectUsers.Add(new ProjectUser(project.OwnerId, project.Id));
-            context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
 
         if (data is IPamProject pamProject)
         {
             pamProject.Id = Project.ProjectIdGenerator.CreateId();
-            return base.Create(pamProject.ToDbProject());
+            return await base.CreateAsync(pamProject.ToDbProject());
         }
 
-        return base.Create(data);
+        return await base.CreateAsync(data);
     }
 
-    public override bool Update(IPamSqlObject data)
+    public override async Task<bool> UpdateOrCreateAsync(IPamSqlObject data)
     {
-        return base.Update(data);
-    }
-
-    public override bool UpdateOrCreate(IPamSqlObject data)
-    {
-        if (!base.Exists(data.Id))
+        if (!await ExistsAsync(data.Id))
         {
-            return Create(data);
+            return await CreateAsync(data);
         }
         
-        return base.UpdateOrCreate(data);
+        return await base.UpdateOrCreateAsync(data);
     }
 
-    public IPamProject LoadOwner(IPamProject item)
+    public async Task<IPamProject> LoadOwnerAsync(IPamProject item)
     {
-        if (item.Owner.Data.UserId == null && item.Owner.Data.UserId <= 0)
+        if (item.Owner == null || item.Owner.Data.UserId <= 0)
         {
             throw new ArgumentException(
                 "The reached in object does not have the owner data included to load it properly. " +
                 "Please reload the object from the database. Otherwise we cannot load the users Owner information.", nameof(item));
         }
-        
-        using var context = new PgSqlContext();
 
-        var owner = PamaxieDatabaseService.UserSingleton.Get(item.Owner.Data.UserId);
+        await using var context = new PgSqlContext();
+
+        var owner = await PamaxieDatabaseService.UserSingleton.GetAsync(item.Owner.Data.UserId);
 
         if (owner is IPamUser user)
         {
@@ -91,18 +83,18 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
                             "time. If the issue persists please contact our support or if you're running in a custom environment your Administrator.");
     }
 
-    public IPamProject LoadLastModifiedUser(IPamProject item)
+    public async Task<IPamProject> LoadLastModifiedUserAsync(IPamProject item)
     {
-        if (item.LastModifiedUser.Data.UserId == null || item.LastModifiedUser.Data.UserId <= 0)
+        if (item.LastModifiedUser == null || item.LastModifiedUser.Data.UserId <= 0)
         {
             throw new ArgumentException(
                 "The reached in object does not have the last modified users data included to load it properly. " +
                 "Please reload the object from the database. Otherwise we cannot load the user who last modified this project and their information.", nameof(item));
         }
-        
-        using var context = new PgSqlContext();
 
-        var lastModifiedUser = PamaxieDatabaseService.UserSingleton.Get(item.LastModifiedUser.Data.UserId);
+        await using var context = new PgSqlContext();
+
+        var lastModifiedUser = await PamaxieDatabaseService.UserSingleton.GetAsync(item.LastModifiedUser.Data.UserId);
 
         if (lastModifiedUser is IPamUser user)
         {
@@ -116,38 +108,41 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
                             "time. If the issue persists please contact our support or if you're running in a custom environment your Administrator.");
     }
 
-    public IPamProject LoadApiTokens(IPamProject item)
+    public async Task<IPamProject> LoadApiTokensAsync(IPamProject item)
     {
-        if (item.Id == null || item.Id <= 0)
+        if (item == null || item.Id <= 0)
         {
             throw new ArgumentException(
                 "The reached in object does not have the id included, which means it is not loaded properly. " +
                 "Please reload the object from the database. Otherwise we are unable to load the APi tokens for it", nameof(item));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         var projects = context.ApiKeys.Where(x => x.ProjectId == item.Id);
 
         item.ApiTokens = new LazyList<(string Token, DateTime LastUsage)>() {IsLoaded = true};
         
         foreach (var project in projects)
         {
-            item.ApiTokens.Add((project.CredentialHash, project.TTL.Value.AddMonths(-6)));
+            if (project.TTL != null)
+            {
+                item.ApiTokens.Add((project.CredentialHash, project.TTL.Value.AddMonths(-6)));
+            }
         }
 
         return item;
     }
 
-    public IPamProject LoadUsers(IPamProject item)
+    public async Task<IPamProject> LoadUsersAsync(IPamProject item)
     {
-        if (item.Id == null || item.Id <= 0)
+        if (item == null || item.Id <= 0)
         {
             throw new ArgumentException(
                 "The reached in object does not have the id included, which means it is not loaded properly. " +
                 "Please reload the object from the database. Otherwise we are unable to load the projects users", nameof(item));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         var users = context.ProjectUsers.Where(x => x.ProjectId == item.Id);
 
         item.Users = new LazyList<(long UserId, ProjectPermissions Permission)>() {IsLoaded = true};
@@ -160,9 +155,9 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         return item;
     }
 
-    public bool ValidateToken(long projectId, string token)
+    public async Task<bool> ValidateTokenAsync(long projectId, string token)
     {
-        using var context = new PgSqlContext();
+        await using var context = new PgSqlContext();
         var apiKeys = context.ApiKeys.Where(x => x.ProjectId == projectId);
 
         foreach (var apiKey in apiKeys)
@@ -176,34 +171,34 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         return false;
     }
 
-    public bool HasPermission(IPamProject project, ProjectPermissions permissions, string username)
+    public async Task<bool> HasPermissionAsync(IPamProject project, ProjectPermissions permissions, string username)
     {
-        return HasPermission(project.Id, 0, username, permissions);
+        return await HasPermissionAsync(project.Id, 0, username, permissions);
     }
 
-    public bool HasPermission(long projectId, ProjectPermissions permissions, long userId)
+    public async Task<bool> HasPermissionAsync(long projectId, ProjectPermissions permissions, long userId)
     {
-        return HasPermission(projectId, userId, string.Empty, permissions);
+        return await HasPermissionAsync(projectId, userId, string.Empty, permissions);
     }
 
-    public bool HasPermission(IPamProject project, ProjectPermissions permissions, long userId)
+    public async Task<bool> HasPermissionAsync(IPamProject project, ProjectPermissions permissions, long userId)
     {
-        return HasPermission(project.Id, userId, string.Empty, permissions);
+        return await HasPermissionAsync(project.Id, userId, string.Empty, permissions);
     }
 
-    public bool HasPermission(long projectId, ProjectPermissions permissions, string username)
+    public async Task<bool> HasPermissionAsync(long projectId, ProjectPermissions permissions, string username)
     {
-        return HasPermission(projectId, 0, username, permissions);
+        return await HasPermissionAsync(projectId, 0, username, permissions);
     }
 
-    public string CreateToken(long projectId)
+    public async Task<string> CreateTokenAsync(long projectId)
     {
         if (projectId <= 0)
         {
             throw new ArgumentException("Invalid parameter. Project Id must be above zero.", nameof(projectId));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         var pw = CreatePassword();
 
 
@@ -212,16 +207,16 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
             ProjectId = projectId,
             CredentialHash = null,
             
-            ///Expiration timeout if not used.
+            //Expiration timeout if not used.
             TTL = DateTime.Now.AddMonths(6)
         });
 
-        context.SaveChanges();
+        await context.SaveChangesAsync();
 
         return pw;
     }
 
-    public bool RemoveToken(long projectId, long apiToken)
+    public async Task<bool> RemoveTokenAsync(long projectId, long apiToken)
     {
         if (projectId <= 0)
         {
@@ -233,26 +228,26 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
             throw new ArgumentException("Invalid parameter. Api Token Id must be above zero.", nameof(apiToken));
         }
 
-        using var context = new PgSqlContext();
+        await using var context = new PgSqlContext();
 
         if (!context.Projects.Any(x => x.Id == projectId))
         {
             return false;
         }
 
-        var key = context.ApiKeys.FirstOrDefault(x => x.Id == apiToken && projectId == projectId);
+        var key = context.ApiKeys.FirstOrDefault(x => x.Id == apiToken);
 
         if (key == null)
         {
             return false;
         }
         
-        context.Remove<ApiKey>(key);
-        context.SaveChanges();
+        context.Remove(key);
+        await context.SaveChangesAsync();
         return true;
     }
 
-    public bool AddUser(long projectId, long userId, ProjectPermissions permissions)
+    public async Task<bool> AddUserAsync(long projectId, long userId, ProjectPermissions permissions)
     {
         if (projectId <= 0)
         {
@@ -263,8 +258,8 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         {
             throw new ArgumentException("Invalid parameter. User Id must be above zero.", nameof(userId));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         
         if (!context.Users.Any(x => x.Id == userId))
         {
@@ -277,12 +272,12 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         }
 
         context.ProjectUsers.Add(new ProjectUser(userId, projectId){Permissions = permissions});
-        context.SaveChanges();
+        await context.SaveChangesAsync();
 
         return true;
     }
 
-    public bool SetPermissions(long projectId, long userId, ProjectPermissions newPermissions)
+    public async Task<bool> SetPermissionsAsync(long projectId, long userId, ProjectPermissions newPermissions)
     {
         if (projectId <= 0)
         {
@@ -293,8 +288,8 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         {
             throw new ArgumentException("Invalid parameter. User Id must be above zero.", nameof(userId));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         
         if (!context.Projects.Any(x => x.Id == projectId))
         {
@@ -307,13 +302,18 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         }
 
         var projectUser = context.ProjectUsers.FirstOrDefault(x => x.UserId == userId && x.ProjectId == projectId);
-        projectUser.Permissions = newPermissions;
-        context.SaveChanges();
+        
+        if (projectUser != null)
+        {
+            projectUser.Permissions = newPermissions;
+        }
+        
+        await context.SaveChangesAsync();
         
         return true;
     }
 
-    public bool RemoveUser(long projectId, long userId)
+    public async Task<bool> RemoveUserAsync(long projectId, long userId)
     {
         if (projectId <= 0)
         {
@@ -324,8 +324,8 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         {
             throw new ArgumentException("Invalid parameter. User Id must be above zero.", nameof(userId));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         
         if (!context.Projects.Any(x => x.Id == projectId))
         {
@@ -338,19 +338,24 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         }
         
         var projectUser = context.ProjectUsers.FirstOrDefault(x => x.UserId == userId && x.ProjectId == projectId);
-        context.ProjectUsers.Remove(projectUser);
-        context.SaveChanges();
+        
+        if (projectUser != null)
+        {
+            context.ProjectUsers.Remove(projectUser);
+        }
+        
+        await context.SaveChangesAsync();
         
         return true;
     }
 
     #region Helper Stuff
 
-    private bool HasPermission(long projectId, long userId, string username, ProjectPermissions permissions)
+    private async Task<bool> HasPermissionAsync(long projectId, long userId, string username, ProjectPermissions permissions)
     {
-        using var context = new PgSqlContext(); 
+        await using var context = new PgSqlContext(); 
         var dbProjects = context.ProjectUsers.Where(x => x.ProjectId == projectId);
-        var user = new ProjectUser();
+        ProjectUser user;
 
         if (string.IsNullOrWhiteSpace(username))
         {
@@ -365,7 +370,7 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
             throw new InvalidOperationException("Please reach in either a username or a user id.");
         }
 
-        if (user.Permissions >= permissions)
+        if (user != null && user.Permissions >= permissions)
         {
             return true;
         }
@@ -374,11 +379,11 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
     }
 
 
-    public static RandomNumberGenerator RngGenerator =  System.Security.Cryptography.RandomNumberGenerator.Create();
+    private static readonly RandomNumberGenerator RngGenerator =  RandomNumberGenerator.Create();
     
     private static string CreatePassword()
     {
-        byte[] tokenBuffer = new byte[64];
+        var tokenBuffer = new byte[64];
         RngGenerator.GetNonZeroBytes(tokenBuffer);
         return Convert.ToBase64String(tokenBuffer);
     }

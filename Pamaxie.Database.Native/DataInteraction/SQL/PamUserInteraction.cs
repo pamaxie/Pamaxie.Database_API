@@ -1,22 +1,24 @@
 using System;
 using System.Linq;
-using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
 using Pamaxie.Data;
+using Pamaxie.Database.Extensions.DataInteraction;
+using Pamaxie.Database.Native.DataInteraction.BusinessLogicExtensions;
 using Pamaxie.Database.Native.Sql;
 
-namespace Pamaxie.Database.Native.DataInteraction.BusinessLogicExtensions;
+namespace Pamaxie.Database.Native.DataInteraction;
 
-public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataInteraction.IPamUserInteraction
+public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteraction
 {
-    /// <inheritdoc cref="Get"/>
-    public override IPamSqlObject Get(long uniqueKey)
+    /// <inheritdoc cref="GetAsync(string)"/>
+    public override async Task<IPamSqlObject> GetAsync(long uniqueKey)
     {
         if (uniqueKey <= 0)
         {
             throw new ArgumentException("Invalid unique Key for the User", nameof(uniqueKey));
         }
         
-        var item = base.Get(uniqueKey);
+        var item = await base.GetAsync(uniqueKey);
         
         if (item is not User user)
         {
@@ -27,98 +29,93 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
         return user.ToIPamUser();
     }
     
-    public override bool Create(IPamSqlObject data)
+    public override async Task<bool> CreateAsync(IPamSqlObject data)
     {
         if (data is IPamUser pamUser)
         {
             pamUser.Id = User.UserIdGenerator.CreateId();
-            return base.Create(pamUser.ToDbUser());
+            return await base.CreateAsync(pamUser.ToDbUser());
         }
         
-        return base.Create(data);
+        return await base.CreateAsync(data);
     }
 
-    public override bool Update(IPamSqlObject data)
+    public override async Task<bool> UpdateAsync(IPamSqlObject data)
     {
         if (data is IPamUser pamUser)
         {
-            return base.Update(pamUser.ToDbUser());
+            return await base.UpdateAsync(pamUser.ToDbUser());
         }
         
-        return base.Update(data);
+        return await base.UpdateAsync(data);
     }
 
-    public override bool UpdateOrCreate(IPamSqlObject data)
-    {
-        return base.UpdateOrCreate(data);
-    }
-    
-    /// <inheritdoc cref="Get"/>
-    public IPamUser Get(string username)
+    /// <inheritdoc cref="GetAsync(string)"/>
+    public async Task<IPamUser> GetAsync(string username)
     {
         if (string.IsNullOrWhiteSpace(username))
         {
             throw new ArgumentNullException(nameof(username));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         return context.Users.FirstOrDefault(x => x.Username == username)?.ToIPamUser();
     }
 
-    ///<inheritdoc cref="ExistsUsername"/>
-    public bool ExistsUsername(string username)
+    ///<inheritdoc cref="ExistsUsernameAsync"/>
+    public async Task<bool> ExistsUsernameAsync(string username)
     {
         if (string.IsNullOrWhiteSpace(username))
         {
             throw new ArgumentNullException(nameof(username));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         return context.Users.Any(x => x.Username == username);
     }
 
-    ///<inheritdoc cref="ExistsUsername"/>
-    public bool ExistsEmail(string email)
+    ///<inheritdoc cref="ExistsUsernameAsync"/>
+    public async Task<bool> ExistsEmailAsync(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
         {
             throw new ArgumentNullException(nameof(email));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         return context.Users.Any(x => x.Email == email);
     }
 
-    /// <inheritdoc cref="LoadFully"/>
-    public IPamUser LoadFully(IPamUser user)
+    /// <inheritdoc cref="LoadFullyAsync"/>
+    public async Task<IPamUser> LoadFullyAsync(IPamUser user)
     {
         if (user == null)
         {
             throw new ArgumentNullException(nameof(user));
         }
         
-        LoadProjects(user);
-        LoadKnownIps(user);
-        LoadTwoFactorOptions(user);
+        await LoadProjectsAsync(user);
+        await LoadKnownIpsAsync(user);
+        await LoadTwoFactorOptionsAsync(user);
 
         return user;
     }
 
-    /// <inheritdoc cref="LoadProjects"/>
-    public IPamUser LoadProjects(IPamUser user)
+    /// <inheritdoc cref="LoadProjectsAsync"/>
+    public async Task<IPamUser> LoadProjectsAsync(IPamUser user)
     {
         if (user == null)
         {
             throw new ArgumentNullException(nameof(user));
         }
 
-        using var context = new PgSqlContext();
+        await using var context = new PgSqlContext();
         var projects = context.ProjectUsers.Where(x => x.UserId == user.Id);
         user.Projects = new LazyList<(IPamProject Project, long ProjectId)>();
 
         foreach (var project in projects)
         {
-            var dbData = PamaxieDatabaseService.ProjectSingleton.Get(project.ProjectId);
+            var dbData = await PamaxieDatabaseService.ProjectSingleton.GetAsync(project.ProjectId);
             if (dbData is not Project projectData)
             {
                 throw new Exception(
@@ -147,8 +144,8 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
         return user;
     }
     
-    /// <inheritdoc cref="GetProjectPermissions"/>
-    public ProjectPermissions GetProjectPermissions(string projectName, IPamUser user)
+    /// <inheritdoc cref="IPamUserInteraction.GetProjectPermissionsAsync(string,Pamaxie.Data.IPamUser)"/>
+    public async Task<ProjectPermissions> GetProjectPermissionsAsync(string projectName, IPamUser user)
     {
         if (user == null)
         {
@@ -159,15 +156,15 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
         {
             throw new ArgumentNullException(nameof(projectName));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         var project = context.Projects.FirstOrDefault(x => x.Name == projectName);
         var projectUser = context.ProjectUsers.FirstOrDefault(x => x.ProjectId == project.Id && x.UserId == user.Id);
         return projectUser?.Permissions ?? ProjectPermissions.None;
     }
     
-    /// <inheritdoc cref="GetProjectPermissions"/>
-    public ProjectPermissions GetProjectPermissions(long projectId, IPamUser user) 
+    /// <inheritdoc cref="IPamUserInteraction.GetProjectPermissionsAsync(long,Pamaxie.Data.IPamUser)"/>
+    public async Task<ProjectPermissions> GetProjectPermissionsAsync(long projectId, IPamUser user) 
     {
         if (user == null)
         {
@@ -178,21 +175,21 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
         {
             throw new ArgumentException("Invalid Project Id", nameof(projectId));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         var projectUser = context.ProjectUsers.FirstOrDefault(x => x.ProjectId == projectId && x.UserId == user.Id);
         return projectUser?.Permissions ?? ProjectPermissions.None;
     }
     
-    /// <inheritdoc cref="LoadTwoFactorOptions"/>
-    public IPamUser LoadTwoFactorOptions(IPamUser user)
+    /// <inheritdoc cref="LoadTwoFactorOptionsAsync"/>
+    public async Task<IPamUser> LoadTwoFactorOptionsAsync(IPamUser user)
     {   
         if (user == null)
         {
             throw new ArgumentNullException(nameof(user));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         var twoFactorOptions = context.TwoFactorUsers.Where(x => x.UserId == user.Id);
         
         foreach (var twoFactorOption in twoFactorOptions)
@@ -203,15 +200,15 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
         return user;
     }
     
-    /// <inheritdoc cref="LoadKnownIps"/>
-    public IPamUser LoadKnownIps(IPamUser user)
+    /// <inheritdoc cref="LoadKnownIpsAsync"/>
+    public async Task<IPamUser> LoadKnownIpsAsync(IPamUser user)
     {
         if (user == null)
         {
             throw new ArgumentNullException(nameof(user));
         }
-        
-        using var context = new PgSqlContext();
+
+        await using var context = new PgSqlContext();
         var knownIps = context.KnownUserIps.Where(x => x.UserId == user.Id);
         foreach (var knownIp in knownIps)
         {
@@ -221,17 +218,17 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, Extensions.DataIn
         return user;
     }
     
-    /// <inheritdoc cref="IsIpKnown"/>
-    public bool IsIpKnown(IPamUser user, string ipAddress)
+    /// <inheritdoc cref="IsIpKnownAsync"/>
+    public async Task<bool> IsIpKnownAsync(IPamUser user, string ipAddress)
     {
-        using var context = new PgSqlContext();
+        await using var context = new PgSqlContext();
         return context.KnownUserIps.Any(x => x.UserId == user.Id && x.IpAddress == ipAddress);
     }
 
-    /// <inheritdoc cref="GetUniqueKey(string)"/>
-    public long GetUniqueKey(string username)
+    /// <inheritdoc cref="GetUniqueKeyAsync"/>
+    public async Task<long> GetUniqueKeyAsync(string username)
     {
-        using var context = new PgSqlContext();
+        await using var context = new PgSqlContext();
         return context.Users.FirstOrDefault(x => x.Username == username)?.Id ?? 0;
     }
 }

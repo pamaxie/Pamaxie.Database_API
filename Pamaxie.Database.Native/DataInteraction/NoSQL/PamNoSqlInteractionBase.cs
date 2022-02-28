@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Net.Http.Json;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Pamaxie.Data;
 using Pamaxie.Database.Extensions.DataInteraction;
@@ -23,7 +24,7 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
         RedisMultiplexer = multiplexer;
     }
 
-    public IPamNoSqlObject Get(string uniqueKey)
+    public async Task<IPamNoSqlObject> GetAsync(string uniqueKey)
     {
         if (string.IsNullOrWhiteSpace(uniqueKey))
         {
@@ -31,12 +32,12 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
         }
 
         var db = CheckAndGetDb();
-        var noSqlObj = db.StringGet(uniqueKey);
+        var noSqlObj = await db.StringGetAsync(uniqueKey);
 
         return string.IsNullOrWhiteSpace(noSqlObj) ? null : JsonConvert.DeserializeObject<IPamNoSqlObject>(noSqlObj);
     }
 
-    public bool Create(IPamNoSqlObject data)
+    public async Task<bool> CreateAsync(IPamNoSqlObject data)
     {
         if (data == null)
         {
@@ -60,14 +61,14 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
 
         if (data.TTL == null)
         {
-            return db.StringSet(data.Key, jsonData);
+            return await db.StringSetAsync(data.Key, jsonData);
         }
 
         var timeDiff = data.TTL - DateTime.Now;
-        return db.StringSet(data.Key, jsonData, timeDiff);
+        return await db.StringSetAsync(data.Key, jsonData, timeDiff);
     }
 
-    public bool Update(IPamNoSqlObject data)
+    public async Task<bool> UpdateAsync(IPamNoSqlObject data)
     {
         if (data == null)
         {
@@ -88,7 +89,7 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
 
         var db = CheckAndGetDb();
 
-        if (!db.KeyExists(data.Key))
+        if (!await db.KeyExistsAsync(data.Key))
         {
             return false;
         }
@@ -97,19 +98,19 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
 
         if (data.TTL == null)
         {
-            return db.StringSet(data.Key, jsonData);
+            return await db.StringSetAsync(data.Key, jsonData);
         }
 
         var timeDiff = data.TTL - DateTime.Now;
-        return db.StringSet(data.Key, jsonData, timeDiff);
+        return await db.StringSetAsync(data.Key, jsonData, timeDiff);
     }
 
-    public bool UpdateOrCreate(IPamNoSqlObject data)
+    public async Task<bool> UpdateOrCreateAsync(IPamNoSqlObject data)
     {
-        return Update(data) || Create(data);
+        return await UpdateAsync(data) || await CreateAsync(data);
     }
 
-    public bool Exists(string uniqueKey)
+    public async Task<bool> ExistsAsync(string uniqueKey)
     {
         if (string.IsNullOrEmpty(uniqueKey))
         {
@@ -119,10 +120,10 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
 
         var db = CheckAndGetDb();
 
-        return db.KeyExists(uniqueKey);
+        return await db.KeyExistsAsync(uniqueKey);
     }
 
-    public bool Delete(IPamNoSqlObject data)
+    public async Task<bool> DeleteAsync(IPamNoSqlObject data)
     {
         if (data == null)
         {
@@ -136,7 +137,7 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
         }
 
         var db = CheckAndGetDb();
-        return db.KeyDelete(data.Key);
+        return await db.KeyDeleteAsync(data.Key);
     }
 
     private IDatabase CheckAndGetDb()

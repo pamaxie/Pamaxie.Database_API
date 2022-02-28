@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Pamaxie.Data;
 using Pamaxie.Database.Native.Sql;
 
@@ -46,10 +47,10 @@ public static class ProjectExtensions
     /// </summary>
     /// <param name="project"></param>
     /// <returns></returns>
-    public static Project LoadDbUser(this IPamProject project)
+    public static async Task<Project> LoadDbProjectAsync(this IPamProject project)
     {
         PamSqlInteractionBase<Project> sqlInteractionBase = new();
-        var userObj = sqlInteractionBase.Get(project.Id);
+        var userObj = await sqlInteractionBase.GetAsync(project.Id);
 
         if (userObj is not Project dbUser)
         {

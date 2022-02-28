@@ -9,44 +9,19 @@ namespace Pamaxie.Authentication
 {
     public class JwtTokenConfig
     {
-        private string _secret;
-
-        public JwtTokenConfig()
-        {
-            
-        }
-        
-        public JwtTokenConfig(string secret)
-        {
-            SymmetricSecurityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secret));
-        }
-
         /// <summary>
         /// Time to live for Keys
         /// </summary>
         public int ExpiresInMinutes { get; set; }
+        
+        /// <summary>
+        /// Lifespan for the long lived token
+        /// </summary>
+        public int LongLivedExpiresInDays { get; set; }
 
         /// <summary>
         /// Private secret that is used to generate Keys
         /// </summary>
-        public string Secret
-        {
-            get => _secret;
-            set
-            {
-                if (_secret != null && _secret == value)
-                {
-                    return;
-                }
-                    
-                _secret = value;
-                SymmetricSecurityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(value));
-            } 
-        }
-
-        /// <summary>
-        /// Bytes from the Authentications <see cref="Secret"/>
-        /// </summary>
-        public SecurityKey SymmetricSecurityKey { get; private set; }
+        public string Secret { get; set; }
     }
 }

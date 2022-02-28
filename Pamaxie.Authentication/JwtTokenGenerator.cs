@@ -27,27 +27,24 @@ namespace Pamaxie.Authentication
         /// </summary>
         /// <param name="userId">User id of the user that will be contained in the token</param>
         /// <returns>A authentication token object</returns>
-        public JwtToken CreateToken(string userId, string authTokenSettings = null)
+        public JwtToken CreateToken(long userId, JwtTokenConfig authTokenSettings = null, bool IsApplicationToken = false, bool longLivedToken = false)
         {
-            //TODO: something is wrong with how this token is generated here. We need to fix this for gathering user information about a token to refresh it for example
+            //Application tokens are always long lived
+            longLivedToken = IsApplicationToken;
+            
+            //Authentication successful so generate JWT Token
+            var tokenHandler = new JwtSecurityTokenHandler();
 
-           //Authentication successful so generate JWT Token
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.ASCII.GetBytes(authTokenSettings.Secret);
+            DateTime? expires;
 
-            byte[] key = null;
-            DateTime? expires = null;
-            if (string.IsNullOrWhiteSpace(authTokenSettings))
+            if (longLivedToken)
             {
-                IConfigurationSection section = _configuration.GetSection("AuthData");
-                key = Encoding.ASCII.GetBytes(section.GetValue<string>("Secret"));
-                expires = DateTime.UtcNow.AddMinutes(section.GetValue<int>("ExpiresInMinutes"));
+                expires = DateTime.Now.AddDays(authTokenSettings.LongLivedExpiresInDays);
             }
             else
             {
-                //TODO: this is only a temporary fix until we figured out how to use our own configuration via dependency injection.
-                var settings = JsonConvert.DeserializeObject<JwtTokenConfig>(authTokenSettings);
-                key = Encoding.ASCII.GetBytes(settings.Secret);
-                expires = DateTime.UtcNow.AddMinutes(settings.ExpiresInMinutes);
+                expires = DateTime.Now.AddMinutes(authTokenSettings.ExpiresInMinutes);
             }
 
             if (expires == null || key == null)
@@ -55,8 +52,15 @@ namespace Pamaxie.Authentication
                 throw new InvalidOperationException("We hit an unexpected problem while generating the token");
             }
 
-            var token = new JwtSecurityToken("Pamaxie", "Pamaxie", null, DateTime.Now.ToUniversalTime(), expires, new SigningCredentials(new SymmetricSecurityKey(key),SecurityAlgorithms.HmacSha256Signature));
-            token.Payload["userId"] = userId;
+            var token = new JwtSecurityToken("Pamaxie", "Pamaxie", null, DateTime.Now.ToUniversalTime(), expires, new SigningCredentials(new SymmetricSecurityKey(key),SecurityAlgorithms.HmacSha256Signature))
+                {
+                    Payload =
+                    {
+                        ["userId"] = userId,
+                        ["applicationToken"] = IsApplicationToken
+                    }
+                };
+            
             var handler = new JwtSecurityTokenHandler();
             var jwt = handler.WriteToken(token);
             return new JwtToken { ExpiresAtUTC = (DateTime)expires, Token = jwt };
@@ -70,16 +74,32 @@ namespace Pamaxie.Authentication
         public static string GetUserKey(string authToken)
         {
             var jwtToken = new JwtSecurityToken(authToken.Replace("Bearer ", string.Empty));
-            return jwtToken.Claims.FirstOrDefault(x => x.Type == "userId").Value;
+            return jwtToken.Claims.FirstOrDefault(x => x.Type == "userId")?.Value;
+        }
+        
+        /// <summary>
+        /// Decrypts a JWT bearer token
+        /// </summary>
+        /// <param name="authToken"></param>
+        /// <returns></returns>
+        public static bool IsApplicationToken(string authToken)
+        {
+            var jwtToken = new JwtSecurityToken(authToken.Replace("Bearer ", string.Empty));
+            if (!bool.TryParse(jwtToken.Claims.FirstOrDefault(x => x.Type == "applicationToken")?.Value,
+                    out var isAppToken))
+            {
+                return false;
+            }
+
+            return isAppToken;
         }
 
         public static string GenerateSecret()
         {
-            using RNGCryptoServiceProvider cryptRng = new RNGCryptoServiceProvider();
-            
-            byte[] tokenBuffer = new byte[64];
-            cryptRng.GetBytes(tokenBuffer);
-            return Convert.ToBase64String(tokenBuffer);
+            using var cryptRng = SHA256.Create();
+            var tokenBuffer = new byte[64];
+            var hash = cryptRng.ComputeHash(tokenBuffer);
+            return Convert.ToBase64String(hash);
         }
     }
 }

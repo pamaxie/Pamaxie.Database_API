@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Pamaxie.Data;
@@ -9,21 +10,21 @@ namespace Pamaxie.Database.Native.DataInteraction;
 
 public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, long>
 {
-    public virtual IPamSqlObject Get(long uniqueKey)
+    public virtual async Task<IPamSqlObject> GetAsync(long uniqueKey)
     {
-        using var context = new PgSqlContext();
-        var obj = context.Find(typeof(T), uniqueKey as object);
+        await using var context = new PgSqlContext();
+        var obj = await context.FindAsync(typeof(T), uniqueKey as object);
         return obj is not T ? null : (IPamSqlObject) obj;
     }
 
-    public virtual bool Create(IPamSqlObject data)
+    public virtual async Task<bool> CreateAsync(IPamSqlObject data)
     {
-        using var context = new PgSqlContext();
+        await using var context = new PgSqlContext();
 
         try
         {
-            context.Add(data);
-            context.SaveChanges();
+            await context.AddAsync(data);
+            await context.SaveChangesAsync();
         }
         catch (PostgresException)
         {
@@ -35,14 +36,14 @@ public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, long>
         return true;
     }
 
-    public virtual bool Update(IPamSqlObject data)
+    public virtual async Task<bool> UpdateAsync(IPamSqlObject data)
     {
-        using var context = new PgSqlContext();
+        await using var context = new PgSqlContext();
 
         try
         {
             context.Update(data);
-            context.SaveChanges();
+            await context.SaveChangesAsync();
         }
         catch (PostgresException)
         {
@@ -54,25 +55,25 @@ public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, long>
         return true;
     }
 
-    public virtual bool UpdateOrCreate(IPamSqlObject data)
+    public virtual async Task<bool> UpdateOrCreateAsync(IPamSqlObject data)
     {
-        return Create(data) || Update(data);
+        return await CreateAsync(data) || await UpdateAsync(data);
     }
 
-    public bool Exists(long uniqueKey)
+    public async Task<bool> ExistsAsync(long uniqueKey)
     {
-        var item = Get(uniqueKey);
+        var item = await GetAsync(uniqueKey);
         return item == null;
     }
 
-    public bool Delete(IPamSqlObject data)
+    public async Task<bool> DeleteAsync(IPamSqlObject data)
     {
-        using var context = new PgSqlContext();
+        await using var context = new PgSqlContext();
 
         try
         {
             context.Remove(data);
-            context.SaveChanges();
+            await context.SaveChangesAsync();
         }
         catch (PostgresException)
         {
