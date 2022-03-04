@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Mime;
 using System.Text.Json.Nodes;
 using Newtonsoft.Json.Linq;
+using SendGrid;
 
 namespace Pamaxie.Database.Api;
 
@@ -23,12 +24,15 @@ public class AppConfigManagement
         None = 0,
         Database = 1,
         JwtBearer = 2,
-        All = 128
+        All = 128,
+        SendGrid
     }
         
     private const string DbSettingsNode = "DbSettings";
     private const string JwtSettingsNode = "JwtSettings";
-
+    
+    
+    public const string SendGridEnvVar = DockerEnvVars.SendGridEnvVar;
     private static readonly string SettingsFileName = "PamSettings.json";
 
     /// <summary>
@@ -54,10 +58,18 @@ public class AppConfigManagement
 
         if (DockerEnvVars.InDocker)
         {
-            var dbSettings = Environment.GetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar, EnvironmentVariableTarget.User);
-            var jwtSettings = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar, EnvironmentVariableTarget.User);
+            var dbSettings = Environment.GetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar, EnvironmentVariableTarget.Machine);
+            var jwtSettings = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar, EnvironmentVariableTarget.Machine);
+            var sendGridToken= Environment.GetEnvironmentVariable(DockerEnvVars.SendGridEnvVar, EnvironmentVariableTarget.Machine);
 
-            if (!string.IsNullOrWhiteSpace(dbSettings) && !string.IsNullOrWhiteSpace(jwtSettings)) return true;
+            if (string.IsNullOrEmpty(sendGridToken))
+            {
+                AnsiConsole.MarkupLine("[red]We could not find a sendgrid api token. This is required for the service to function[/]");
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(dbSettings) && 
+                !string.IsNullOrWhiteSpace(jwtSettings)) return true;
                 
             AnsiConsole.MarkupLine("[yellow]We could not find part of your configuration. " +
                                    "We will try to regenerate it now for you[/]");
@@ -73,14 +85,29 @@ public class AppConfigManagement
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(jwtSettings)) return true;
-            if (!GenerateConfig(MissingSettings.JwtBearer)) return true;
-                
-            additionalIssue =
-                "[red]Could not generate the missing JwtBearer settings from the existing environment" +
-                "variables. Please recreate the docker container to fix this issue.[/]";
-                
-            return false;
+            if (string.IsNullOrWhiteSpace(jwtSettings))
+            {
+                if (!GenerateConfig(MissingSettings.JwtBearer)) return true;
+
+                additionalIssue =
+                    "[red]Could not generate the missing JwtBearer settings from the existing environment" +
+                    "variables. Please recreate the docker container to fix this issue.[/]";
+
+                return false;
+            }
+            
+            if (string.IsNullOrWhiteSpace(sendGridToken))
+            {
+                if (!GenerateConfig(MissingSettings.SendGrid)) return true;
+
+                additionalIssue =
+                    "[red]Could not generate the missing Sendgrid settings from the existing environment" +
+                    "variables. Please recreate the docker container to fix this issue.[/]";
+
+                return false;
+            }
+
+            return true;
         }
 
         if (!File.Exists(SettingsFileName))
@@ -114,6 +141,7 @@ public class AppConfigManagement
         JObject jObject = JObject.Parse(fileText);
         var jsonDbSettings = jObject.SelectToken(DbSettingsNode);
         var jsonJwtSettings = jObject.SelectToken(JwtSettingsNode);
+        var jsonSendgridToken = jObject.SelectToken(SendGridEnvVar);
 
         if (jsonDbSettings == null)
         {
@@ -129,18 +157,32 @@ public class AppConfigManagement
             }
         }
 
-        if (jsonJwtSettings != null) return true;
-            
-        AnsiConsole.MarkupLine("[yellow]We could not find the jwt settings in the configuration file. " +
-                               "Regenerating them now...[/]");
+        if (jsonJwtSettings == null)
+        {
+            AnsiConsole.MarkupLine("[yellow]We could not find the jwt settings in the configuration file. " +
+                                   "Regenerating them now...[/]");
 
-        if (GenerateConfig(MissingSettings.JwtBearer)) return true;
+            if (GenerateConfig(MissingSettings.JwtBearer)) return true;
+
+            additionalIssue =
+                "[red]Could not successfully regenerate jwt settings. " +
+                "Please ensure your input was correct and you didn't interrupt the configuration generation.[/]";
+
+            return false;
+        }
+        
+        if (jsonSendgridToken == null)
+        {
+            AnsiConsole.Markup("[yellow]We could not find your Sendgrid APi token. Asking you to add one now[/]");
+
+            if (GenerateConfig(MissingSettings.SendGrid)) return true;
             
-        additionalIssue =
-            "[red]Could not successfully regenerate jwt settings. " +
-            "Please ensure your input was correct and you didn't interrupt the configuration generation.[/]";
-            
-        return false;
+            additionalIssue = 
+                "[red]Could not successfully generate your Sendgrid Api token. " +
+                "Please ensure your input was correct and you didn't interrupt the configuration generation.[/]";
+        }
+        
+        return true;
     }
 
     /// <summary>
@@ -153,8 +195,10 @@ public class AppConfigManagement
         {
             var dbSettings = Environment.GetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar, EnvironmentVariableTarget.Machine);
             var jwtSettings = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar, EnvironmentVariableTarget.Machine);
-                
-            if (string.IsNullOrWhiteSpace(dbSettings) || string.IsNullOrWhiteSpace(jwtSettings))
+            var sendgridToken =
+                Environment.GetEnvironmentVariable(DockerEnvVars.SendGridEnvVar, EnvironmentVariableTarget.Machine);
+
+            if (string.IsNullOrWhiteSpace(dbSettings) || string.IsNullOrWhiteSpace(jwtSettings) || string.IsNullOrWhiteSpace(sendgridToken))
             {
                 throw new Exception("The settings could not be found. Please ensure the docker container " +
                                     "was configured properly and that the environment User-Level " +
@@ -164,6 +208,7 @@ public class AppConfigManagement
 
             JwtSettings = JsonConvert.DeserializeObject<JwtTokenConfig>(jwtSettings);
             DbSettings = JsonConvert.DeserializeObject<DbSettings>(dbSettings);
+            Environment.SetEnvironmentVariable(SendGridEnvVar, sendgridToken, EnvironmentVariableTarget.Process);
             return;
         }
 
@@ -205,6 +250,13 @@ public class AppConfigManagement
                     "Invalid formatting inside of the settings file. Please validate the settings are valid Json");
             }
 
+            var sendgridToken = jObject.SelectToken(SendGridEnvVar);
+            if (sendgridToken != null)
+            {
+                var token = sendgridToken.ToObject<string>();
+                Environment.SetEnvironmentVariable(SendGridEnvVar, token, EnvironmentVariableTarget.Process);
+            }
+
         }
         else
         {
@@ -224,6 +276,7 @@ public class AppConfigManagement
 
         var dbConnectionConfig = string.Empty;
         var jwtBearerConfig = string.Empty;
+        var sendgridConfig = string.Empty;
             
         if (DockerEnvVars.InDocker)
         {
@@ -281,7 +334,42 @@ public class AppConfigManagement
         {
             jwtBearerConfig = GenerateJwtConfig();
         }
+
+        if (missingSettings.HasFlag(MissingSettings.SendGrid) || missingSettings.HasFlag(MissingSettings.All))
+        {
+            if (DockerEnvVars.InDocker)
+            {
+                throw new InvalidOperationException(
+                    "Cannot regenerate the settings for sendgrid in docker. You need to specify the env var during creation of the container.");
+            }
+            else
+            {
+                while (true)
+                {
+                    var token = AnsiConsole.Ask<string>("Please enter your Twilio Sendgrid Token");
+                
+                    try
+                    {
+                        var client = new SendGridClient(token);
+                    }
+                    catch (Exception ex)
+                    {
+                       AnsiConsole.WriteException(ex);
+                       var retry = AnsiConsole.Ask("Could not validate your token do you want to try again, or just continue" +
+                                                   "with this token?", true);
+                       if (retry)
+                       {
+                           continue;
+                       }
+                    }
+                    
+                    sendgridConfig = token;
+                    break;
+                }
+            }
             
+        }
+
         Console.Clear();
 
         var ruler = new Rule("[yellow]Configuration Setup[/]") {Alignment = Justify.Left};
@@ -302,30 +390,45 @@ public class AppConfigManagement
         {
             AnsiConsole.MarkupLine($"[green]Jwt Settings: {jwtBearerConfig}[/]");
         }
-            
-        switch (DockerEnvVars.InDocker)
+        
+        if (missingSettings.HasFlag(MissingSettings.SendGrid) || missingSettings.HasFlag(MissingSettings.All))
         {
-            case false when !AnsiConsole.Confirm("Do you want to use the configured settings?"):
+            AnsiConsole.MarkupLine($"[green]Sendgrid Token: {sendgridConfig}[/]");
+        }
+        
+        if (DockerEnvVars.InDocker)
+        {
+            Environment.SetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar, jwtBearerConfig,
+                EnvironmentVariableTarget.User);
+            Environment.SetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar, dbConnectionConfig,
+                EnvironmentVariableTarget.User);
+        }
+        else
+        {
+            if (!AnsiConsole.Confirm("Do you want to use the configured settings?"))
+            {
                 return false;
-            case true:
-                Environment.SetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar, jwtBearerConfig, EnvironmentVariableTarget.User);
-                Environment.SetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar, dbConnectionConfig, EnvironmentVariableTarget.User);
-                break;
-            default:
-                var jObject = new JObject();
-                jObject.Add(DbSettingsNode, dbConnectionConfig);
-                jObject.Add(JwtSettingsNode, jwtBearerConfig);
-                    
-                File.WriteAllText(SettingsFileName, JsonConvert.SerializeObject(jObject));
-                break;
+            }
         }
 
+        if (!DockerEnvVars.InDocker)
+        {
+            var jObject1 = new JObject();
+            jObject1.Add(DbSettingsNode, dbConnectionConfig);
+            jObject1.Add(JwtSettingsNode, jwtBearerConfig);
+            jObject1.Add(SendGridEnvVar, sendgridConfig);
+            File.WriteAllText(SettingsFileName, JsonConvert.SerializeObject(jObject1, Formatting.Indented));
+        }
 
         AnsiConsole.MarkupLine("Successfully created your configuration.\n" +
                                "Thank you for using Pamaxie's Services. If you require help using this service " +
                                "please see our wiki with all documentation at [blue]https://wiki.pamaxie.com[/]\n");
 
-        if (DockerEnvVars.InDocker) return true;
+        if (DockerEnvVars.InDocker)
+        {
+            return true;
+        }
+        
         AnsiConsole.WriteLine("[yellow]We will now have to exit the program because we require a restart to load the config properly.[/]\n" +
                               "Press any key to exit...");
         Console.ReadKey();

@@ -1,9 +1,11 @@
 using System;
 using System.IO;
 using System.Net.Mime;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Isopoh.Cryptography.Argon2;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +13,8 @@ using Newtonsoft.Json;
 using Pamaxie.Authentication;
 using Pamaxie.Data;
 using Pamaxie.Database.Extensions;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 
 namespace Pamaxie.Database.Api.Controllers;
 
@@ -39,107 +43,64 @@ public sealed class UserController : ControllerBase
         _generator = generator;
     }
 
-
     /// <summary>
     /// Signs in a user via Basic authentication and returns a token.
     /// </summary>
     /// <returns><see cref="JwtToken"/> Token for Authentication</returns>
     [AllowAnonymous]
-    [HttpPost("Login")]
-    [Consumes(MediaTypeNames.Application.Json)]
-    public async Task<ActionResult<JwtToken>> LoginTask()
+    [HttpGet("Login")]
+    public async Task<ActionResult<(JwtToken token, IPamUser user)>> LoginTask()
     {
         var authHeader = Request.Headers["authorization"].ToString();
+
+        bool longLivedToken = false;
+        if (Request.Body.Length > 0)
+        {
+            using StreamReader reader = new StreamReader(HttpContext.Request.Body);
+            var body = reader.ReadToEnd();
+
+            if (body.Contains("LongLived = true"))
+            {
+                longLivedToken = true;
+            }
+        }
 
         if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Basic"))
         {
             return Unauthorized(authHeader ?? string.Empty);
         }
-
-        var encodedUsernamePassword = authHeader.Substring("Basic ".Length).Trim();
-
-        //the coding should be iso or you could use ASCII and UTF-8 decoder
-        var encoding = Encoding.GetEncoding("iso-8859-1");
-        var usernamePassword = encoding.GetString(Convert.FromBase64String(encodedUsernamePassword));
-        var separatorIndex = usernamePassword.IndexOf(':');
-        var userName = usernamePassword.Substring(0, separatorIndex);
-        var userPass = usernamePassword.Substring(separatorIndex + 1);
-
-        var user = await _dbDriver.Service.Users.GetAsync(userName);
-
-        if (!await ValidateUserAccessAsync(user.Id, userPass))
+        
+        var authResult = await ValidateUserAccess(authHeader.Substring("Basic ".Length).Trim());
+        
+        if (!authResult.SuccessfulAuth)
         {
-            return Unauthorized(
-                "User is not authorized to login, this maybe due to an invalid username or password" +
-                "or the user being locked out of our system. If you are sure your credentials are correct" +
-                "please contact support.");
+            return Unauthorized("Invalid username or password.");
         }
 
-        var newToken = _generator.CreateToken(user.Id, AppConfigManagement.JwtSettings);
-        return Ok(newToken);
+        var newToken = _generator.CreateToken(authResult.user.Id, AppConfigManagement.JwtSettings, false, longLivedToken);
+        return (newToken, authResult.user);
     }
-
+    
     /// <summary>
-    /// Creates a new Api User, needs to be unauthorized
+    /// Signs in a user via Basic authentication and returns a token.
     /// </summary>
-    /// <returns><see cref="string"/> Success?</returns>
-    [AllowAnonymous]
-    [HttpPost("Create")]
-    [Consumes(MediaTypeNames.Application.Json)]
-    public async Task<ActionResult<string>> CreateUserTask()
-    {
-        using var reader = new StreamReader(HttpContext.Request.Body);
-        var body = await reader.ReadToEndAsync();
-
-        if (string.IsNullOrWhiteSpace(body))
-        {
-            return BadRequest("Please specify a user to create");
-        }
-
-        var user = JsonConvert.DeserializeObject<PamUser>(body);
-
-        if (user == null)
-        {
-            return BadRequest("Expected a PamUser object for creation as the body but couldn't find one. Please" +
-                              "ensure your Json is correct.");
-        }
-
-
-        if (await _dbDriver.Service.Users.ExistsUsernameAsync(user.UserName) ||
-            await _dbDriver.Service.Users.ExistsEmailAsync(user.Email))
-        {
-            return Conflict("The specified username or email already exists in our database. " +
-                            "Please make sure they are unique.");
-        }
-
-        //By default we are not granting close access at the moment.
-        user.HasClosedAccess = false;
-        user.Flags = UserFlags.None;
-
-        var wasSuccess = await _dbDriver.Service.Users.CreateAsync(user);
-
-        if (wasSuccess)
-        {
-        }
-        else
-        {
-            return StatusCode(500, "Unable to create the user because of an unexpected error during creation. " +
-                                   "Please contact your server administrator");
-        }
-
-        return Created("/users", null);
-    }
-
-    /// <summary>
-    /// Refreshes an exiting <see cref="JwtToken"/>
-    /// </summary>
-    /// <returns>Refreshed <see cref="JwtToken"/></returns>
-    [Authorize]
-    [HttpPost("RefreshToken")]
-    [Consumes(MediaTypeNames.Application.Json)]
-    public async Task<ActionResult<JwtToken>> RefreshTask()
+    /// <returns><see cref="JwtToken"/> Token for Authentication</returns>
+    [HttpGet("RefreshToken")]
+    public async Task<ActionResult<JwtToken>> UpdateTask()
     {
         var token = Request.Headers["authorization"];
+        
+        bool longLivedToken = false;
+        if (Request.Body.Length > 0)
+        {
+            using StreamReader reader = new StreamReader(HttpContext.Request.Body);
+            var body = await reader.ReadToEndAsync();
+
+            if (body.Contains("LongLived = true"))
+            {
+                longLivedToken = true;
+            }
+        }
 
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -155,67 +116,172 @@ public sealed class UserController : ControllerBase
         }
 
         //Validate if the user was maybe deleted since the last auth
-        if (!await ValidateUserAccessAsync(userId))
+        if (!await ValidateUserAccess(userId))
         {
             return Unauthorized(
                 "The token you entered is incorrect or the user of the Token was locked out of our system." +
                 "Please check your credentials. If you are sure they are correct please contact support.");
         }
 
-        var newToken = _generator.CreateToken(userId, AppConfigManagement.JwtSettings);
-        return Ok(newToken);
+        var newToken = _generator.CreateToken(userId, AppConfigManagement.JwtSettings, false, longLivedToken);
+        return newToken;
     }
     
     /// <summary>
-    /// Refreshes an exiting <see cref="JwtToken"/>
+    /// Signs in a user via Basic authentication and returns a token.
     /// </summary>
-    /// <returns>Refreshed <see cref="JwtToken"/></returns>
-    [Authorize]
-    [HttpPost("Get")]
-    public async Task<ActionResult<JwtToken>> Get()
+    /// <returns><see cref="JwtToken"/> Token for Authentication</returns>
+    [HttpPost("Create")]
+    [AllowAnonymous]
+    [Consumes(MediaTypeNames.Application.Json)]
+    public async Task<ActionResult<JwtToken>> CreateTask()
     {
-        throw new NotImplementedException();
+        var authHeader = Request.Headers["authorization"].ToString();
+        if (Request.Body.Length == 0)
+        {
+            return BadRequest("Please post a user that should be created");
+        }
+        
+        using StreamReader reader = new StreamReader(HttpContext.Request.Body);
+        var body = await reader.ReadToEndAsync();
+        var userObject = JsonConvert.DeserializeObject(body);
+        if (userObject is not IPamUser user)
+        {
+            return BadRequest("The input data was in an invalid format or contained an unexpected item.");
+        }
+
+        if (string.IsNullOrWhiteSpace(user.Email))
+        {
+            return BadRequest("The users email was empty. This field is required");
+        }
+
+        if (string.IsNullOrWhiteSpace(user.PasswordHash))
+        {
+            return BadRequest("The users password was empty. This field is required.");
+        }
+
+        if (string.IsNullOrWhiteSpace(user.UserName))
+        {
+            return BadRequest("The users username was empty. This field is required.");
+        }
+        
+        user.Flags = UserFlags.None;
+        user.CreationDate = DateTime.Now;
+        user.Projects = null;
+
+        if (await _dbDriver.Service.Users.ExistsEmailAsync(user.Email))
+        {
+            return Conflict("This email already exists.");
+        }
+
+        if (await _dbDriver.Service.Users.ExistsUsernameAsync(user.UserName))
+        {
+            return Conflict("This username already exists.");
+        }
+
+        if (!await _dbDriver.Service.Users.CreateAsync(user))
+        {
+            return StatusCode(500, "We hit an unexpected error while attempting to create the user.");
+        }
+
+        user = await _dbDriver.Service.Users.GetAsync(user.UserName);
+
+        var confirmationCode = await SendConfirmationEmailAsync(user.Email, user.UserName);
+        
+        if (string.IsNullOrWhiteSpace(confirmationCode))
+        {
+            return StatusCode(500,
+                "An error occured while trying to sent the activation email. Please reach out to support.");
+        }
+
+        await _dbDriver.Service.Users.SetConfirmationCodeAsync(user.Id, user.UserName);
+
+        return Ok("An email was sent to the users email to confirm their account.");
     }
 
-    private async Task<bool> ValidateUserAccessAsync(long userId, string password = null)
+    private async Task<string> SendConfirmationEmailAsync(string userEmail, string userName)
     {
-        //User does not exist in our Database.
-        if (!await _dbDriver.Service.Users.ExistsAsync(userId))
+        var token = Environment.GetEnvironmentVariable(AppConfigManagement.SendGridEnvVar, EnvironmentVariableTarget.Process);
+
+        if (string.IsNullOrWhiteSpace(token))
         {
-            return false;
+            return null;
+        }
+        
+        var client = new SendGridClient(token);
+        var msg = new SendGridMessage();
+        msg.SetFrom("noreply@pamaxie.com", "Pamaxie DevTeam");
+        msg.AddTo(userEmail);
+        msg.SetTemplateId("d-2cf9999301204c77a0c7a960c759a77a");
+
+
+        var confirmationCode = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        msg.SetTemplateData(new
+        {
+            UserName = userName,
+            SignupUrl = $"https://api.pamaxie.com/confirmMail={confirmationCode}"
+        });
+
+        await client.SendEmailAsync(msg);
+
+        return confirmationCode;
+    }
+
+    private async Task<bool> IsPamStaff(long userId)
+    {
+        var dbObj = await _dbDriver.Service.Users.GetAsync(userId);
+        if (dbObj is IPamUser user)
+        {
+            return user.Flags.HasFlag(UserFlags.PamaxieStaff);
         }
 
-        var userObj = await _dbDriver.Service.Users.GetAsync(userId);
+        return false;
+    }
 
-        //User object isn't correct which may mean wrong type of ID was entered
-        if (userObj is not IPamUser user)
+    private async Task<bool> ValidateUserAccess(long userId)
+    {
+        var dbObj = await _dbDriver.Service.Users.GetAsync(userId);
+        if (dbObj is IPamUser user)
         {
-            return false;
-        }
+            if (!user.Flags.HasFlag(UserFlags.HasClosedAccess))
+            {
+                return false;
+            }
+            else if (!user.Flags.HasFlag(UserFlags.ConfirmedAccount))
+            {
+                return false;
+            }
+            else if (!user.Flags.HasFlag(UserFlags.Locked))
+            {
+                return false;
+            }
 
-        //The users account has not been verified.
-        if (!user.Flags.HasFlag(UserFlags.ConfirmedAccount))
-        {
-            return false;
-        }
-
-        //The users account has been locked by our moderation team
-        if (!user.Flags.HasFlag(UserFlags.Locked))
-        {
-            return false;
-        }
-
-        //Closed access is currently required to access our service
-        if (!user.HasClosedAccess)
-        {
-            return false;
-        }
-
-        if (string.IsNullOrWhiteSpace(password))
-        {
             return true;
         }
 
-        return Argon2.Verify(user.PasswordHash, password);
+        return false;
+    }
+
+    private async Task<(bool SuccessfulAuth, IPamUser user)> ValidateUserAccess(string credentials)
+    {
+        var encoding = Encoding.GetEncoding("iso-8859-1");
+        var usernamePassword = encoding.GetString(Convert.FromBase64String(credentials));
+        var separatorIndex = usernamePassword.IndexOf(':');
+        var userName = usernamePassword.Substring(0, separatorIndex);
+        var userPass = usernamePassword.Substring(separatorIndex + 1);
+        IPamUser user = await _dbDriver.Service.Users.GetAsync(userName);
+
+        //Validate the user has access to our closed access alpha and has a confirmed account
+        if (!user.Flags.HasFlag(UserFlags.HasClosedAccess) || !user.Flags.HasFlag(UserFlags.ConfirmedAccount))
+        {
+            return (false, user);
+        }
+        
+        if (Argon2.Verify(userPass, user.PasswordHash))
+        {
+            return (true, user);
+        }
+
+        return (false, user);
     }
 }

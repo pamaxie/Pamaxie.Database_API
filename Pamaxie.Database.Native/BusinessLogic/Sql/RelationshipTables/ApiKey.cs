@@ -1,7 +1,10 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using IdGen;
+using Isopoh.Cryptography.Argon2;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic.CompilerServices;
 using Pamaxie.Data;
@@ -14,7 +17,7 @@ namespace Pamaxie.Database.Native.Sql;
 [Index(nameof(ProjectId), nameof(CredentialHash))]
 public class ApiKey : IPamSqlObject
 {
-    internal static IdGenerator ApiKeyIdGenerator = new IdGenerator(4);
+    private static readonly IdGenerator ApiKeyIdGenerator = new IdGenerator(4);
     private DateTime? _ttl;
 
     public ApiKey()
@@ -51,5 +54,22 @@ public class ApiKey : IPamSqlObject
             
             _ttl = null;
         }
+    }
+    
+    
+    internal string CreateToken()
+    {
+        if (ProjectId == 0 || Id == 0)
+        {
+            throw new InvalidOperationException("Cannot create a token before the project and items Id are assigned");
+        }
+        
+        var sha512Provider = SHA512.Create();
+        var hash = sha512Provider.ComputeHash(RandomNumberGenerator.GetBytes(512));
+        var tokenCredential =  Convert.ToBase64String(hash);
+        var secretToken = $"PamToken/-//{ProjectId}/-//{Id}/-//{tokenCredential}";
+
+        CredentialHash = Argon2.Hash(secretToken);
+        return secretToken;
     }
 }

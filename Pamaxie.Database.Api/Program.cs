@@ -40,6 +40,11 @@ public static class Program
         IConfigurationRoot configuration = new ConfigurationBuilder().AddCommandLine(args).Build();
         List<string> hostUrl = new List<string>();
         string nameString = configuration["hosturl"];
+        
+        if (DockerEnvVars.InDocker)
+        {
+            nameString = Environment.GetEnvironmentVariable(DockerEnvVars.HostStringEnvVar, EnvironmentVariableTarget.Machine);
+        }
 
         if (string.IsNullOrWhiteSpace(nameString))
         {
@@ -50,7 +55,9 @@ public static class Program
         {
             hostUrl = nameString.Split(',').ToList();
         }
-
+        
+        //TODO: Not respecting docker options for now, to reduce complexity. This will be added in the future.
+        
         return Host.CreateDefaultBuilder(args)
             .ConfigureWebHostDefaults(webBuilder =>
             {

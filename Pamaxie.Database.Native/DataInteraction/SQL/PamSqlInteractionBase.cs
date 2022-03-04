@@ -55,11 +55,6 @@ public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, long>
         return true;
     }
 
-    public virtual async Task<bool> UpdateOrCreateAsync(IPamSqlObject data)
-    {
-        return await CreateAsync(data) || await UpdateAsync(data);
-    }
-
     public async Task<bool> ExistsAsync(long uniqueKey)
     {
         var item = await GetAsync(uniqueKey);

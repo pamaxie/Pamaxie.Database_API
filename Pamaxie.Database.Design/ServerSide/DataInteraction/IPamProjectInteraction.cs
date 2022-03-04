@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Pamaxie.Data;
 
@@ -43,7 +44,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <param name="projectId">Id of the project that should be verified</param>
         /// <param name="token">The auth token fot the project</param>
         /// <returns><see cref="IPamProject"/> that could be authenticated with the token</returns>
-        public Task<bool> ValidateTokenAsync(long projectId, string token);
+        public Task<bool> ValidateTokenAsync(string token);
 
         /// <summary>
         /// Checks if a user has certain project permissions
@@ -98,7 +99,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// </summary>
         /// <param name="projectId">Id of the project to create a token for</param>
         /// <returns>Api token that was auto generated for the user (login credential)</returns>
-        public Task<string> CreateTokenAsync(long projectId);
+        public Task<string> CreateTokenAsync(long projectId, DateTime expiryTime);
 
         /// <summary>
         /// Adds a Api Token to a project

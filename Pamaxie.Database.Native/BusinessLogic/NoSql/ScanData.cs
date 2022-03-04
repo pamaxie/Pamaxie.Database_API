@@ -10,9 +10,9 @@ namespace Pamaxie.Database.Native.NoSql;
 /// </summary>
 public class ScanData : IPamNoSqlObject
 {
-    public ScanData(string dataHash, string scanResultKey)
+    public ScanData(string key, string scanResultKey)
     {
-        Key = dataHash;
+        Key = key;
         ScanResultKey = scanResultKey;
     }
     
@@ -21,6 +21,6 @@ public class ScanData : IPamNoSqlObject
     public string DataExtension { get; set; }
     public string ScanMachineGuid { get; set; }
     public bool IsUserScan { get; set; }
-    public string ScanResultKey { get; set; }
+    public string ScanResultKey { get; private set; }
     public DateTime? TTL { get; set; }
 }

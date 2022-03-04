@@ -6,7 +6,7 @@ namespace Pamaxie.Database.Native.DataInteraction.BusinessLogicExtensions;
 
 public static class UserExtensions
 {
-    public static IPamUser ToIPamUser(this User user)
+    public static IPamUser ToUserLogic(this User user)
     {
         var pamUser = new PamUser
         {
@@ -16,7 +16,7 @@ public static class UserExtensions
             LastName = user.LastName,
             FirstName = user.FirstName,
             PasswordHash = user.PasswordHash,
-            TwoFactorOptions = new LazyList<(TwoFactorType Type, string Secret)>(){IsLoaded = false},
+            //TwoFactorOptions = new LazyList<(TwoFactorType Type, string Secret)>(){IsLoaded = false},
             KnownIps = new LazyList<string>(){IsLoaded = false},
             Projects = new LazyList<(IPamProject Project, long ProjectId)>(){IsLoaded = false},
             Flags = user.Flags,
@@ -26,7 +26,7 @@ public static class UserExtensions
         return pamUser;
     }
     
-    public static User ToDbUser(this IPamUser user)
+    public static User ToBusinessLogic(this IPamUser user)
     {
         var pamUser = new User
         {

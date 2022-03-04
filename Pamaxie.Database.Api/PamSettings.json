@@ -1,4 +1,0 @@
-{
-  "DbSettings": "{\"DatabaseDriverGuid\":\"283f10c3-5022-4cda-a5a7-e491a1e84b32\",\n   \"Settings\":\"{\\n  \\\"Db1Config\\\": \\\"Host=localhost;Username=postgres;Database=pamaxie\\\",\\n  \\\"Db2Config\\\": \\\"localhost\\\"\\n}\"\n}",
-  "JwtSettings":"{\n  \"ExpiresInMinutes\": 30,\n  \"LongLivedExpiresInDays\": 30,\n  \"Secret\": \"hkgFDmhR7FFc1QVRvh6TFKIWUkXgDU7oLLzbwZRiTOgcA3uKVvGXZ58KXo4PhTdw3zYUvc4MoM3Lkxrah1sDmQ==\"\n}"
-}

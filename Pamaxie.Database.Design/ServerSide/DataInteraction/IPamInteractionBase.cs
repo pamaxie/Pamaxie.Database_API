@@ -36,15 +36,6 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         public Task<bool> UpdateAsync(T data);
 
         /// <summary>
-        /// Updates or creates a <see cref="T"/> value inside the service,
-        /// returns a <see cref="bool"/> depending if a new <see cref="T"/> value was updated or created inside the service.
-        /// </summary>
-        /// <param name="data">The <see cref="T"/> value that should be updated or created in the service</param>
-        /// <returns><see cref="bool"/> if a new value was created</returns>
-        /// <exception cref="ArgumentException">if <see cref="data"/> did not contain a valid key</exception>
-        public Task<bool> UpdateOrCreateAsync(T data);
-
-        /// <summary>
         /// Checks if a given key exists in the database (does not read the key out)
         /// </summary>
         /// <param name="uniqueKey"><see cref="string"/> that is searched for if it exists in the database</param>

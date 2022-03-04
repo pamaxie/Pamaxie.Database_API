@@ -13,7 +13,7 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
 {
     private ConnectionMultiplexer RedisMultiplexer;
 
-    public PamNoSqlInteractionBase(PamaxieDatabaseService owner)
+    protected PamNoSqlInteractionBase(PamaxieDatabaseService owner)
     {
         if (owner.DbConnectionHost1 is not ConnectionMultiplexer multiplexer)
         {
@@ -24,7 +24,7 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
         RedisMultiplexer = multiplexer;
     }
 
-    public async Task<IPamNoSqlObject> GetAsync(string uniqueKey)
+    public virtual async Task<IPamNoSqlObject> GetAsync(string uniqueKey)
     {
         if (string.IsNullOrWhiteSpace(uniqueKey))
         {
@@ -33,42 +33,22 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
 
         var db = CheckAndGetDb();
         var noSqlObj = await db.StringGetAsync(uniqueKey);
-
+        if (!noSqlObj.HasValue)
+        {
+            return null;
+        }
+        
+        //Update the TTL of the object to be half a year.
+        await db.StringSetAsync(uniqueKey, noSqlObj.ToString(), DateTime.Now.AddMonths(6) - DateTime.Now);
         return string.IsNullOrWhiteSpace(noSqlObj) ? null : JsonConvert.DeserializeObject<IPamNoSqlObject>(noSqlObj);
     }
 
-    public async Task<bool> CreateAsync(IPamNoSqlObject data)
+    public virtual async Task<bool> CreateAsync(IPamNoSqlObject data)
     {
-        if (data == null)
-        {
-            throw new ArgumentNullException(nameof(data));
-        }
-
-        if (string.IsNullOrEmpty(data.Key))
-        {
-            throw new ArgumentException("Please ensure that the reached in data contains a " +
-                                        "key before trying to save it to the database", nameof(data));
-        }
-
-        if (data.TTL != null && data.TTL < DateTime.Now)
-        {
-            throw new ArgumentException("The reached in TTL is in the past. " +
-                                        "Please ensure its in the future.", nameof(data.TTL));
-        }
-
-        var db = CheckAndGetDb();
-        var jsonData = JsonConvert.SerializeObject(data);
-
-        if (data.TTL == null)
-        {
-            return await db.StringSetAsync(data.Key, jsonData);
-        }
-
-        var timeDiff = data.TTL - DateTime.Now;
-        return await db.StringSetAsync(data.Key, jsonData, timeDiff);
+        return await this.UpdateAsync(data);
     }
 
-    public async Task<bool> UpdateAsync(IPamNoSqlObject data)
+    public virtual async Task<bool> UpdateAsync(IPamNoSqlObject data)
     {
         if (data == null)
         {
@@ -94,20 +74,11 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
             return false;
         }
 
+        data.TTL = DateTime.Now.AddMonths(6);
         var jsonData = JsonConvert.SerializeObject(data);
-
-        if (data.TTL == null)
-        {
-            return await db.StringSetAsync(data.Key, jsonData);
-        }
-
         var timeDiff = data.TTL - DateTime.Now;
+        
         return await db.StringSetAsync(data.Key, jsonData, timeDiff);
-    }
-
-    public async Task<bool> UpdateOrCreateAsync(IPamNoSqlObject data)
-    {
-        return await UpdateAsync(data) || await CreateAsync(data);
     }
 
     public async Task<bool> ExistsAsync(string uniqueKey)

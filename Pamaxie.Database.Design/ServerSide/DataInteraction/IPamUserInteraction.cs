@@ -71,14 +71,14 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         ///     of the user</returns>
         public Task<ProjectPermissions> GetProjectPermissionsAsync(long projectId, IPamUser user);
 
-        /// <summary>
-        /// Loads the <see>
-        ///     <cref>users</cref>
-        /// </see>
-        /// Two Factor options
-        /// </summary>
-        /// <param name="user">User to get the Two factor options from</param>
-        public Task<IPamUser> LoadTwoFactorOptionsAsync(IPamUser user);
+        // /// <summary>
+        // /// Loads the <see>
+        // ///     <cref>users</cref>
+        // /// </see>
+        // /// Two Factor options
+        // /// </summary>
+        // /// <param name="user">User to get the Two factor options from</param>
+        // public Task<IPamUser> LoadTwoFactorOptionsAsync(IPamUser user);
 
         /// <summary>
         /// Loads the <see>
@@ -103,5 +103,21 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <param name="username"><see cref="IPamUser"/>'s username to get the keys from</param>
         /// <returns>unique key</returns>
         public Task<long> GetUniqueKeyAsync(string username);
+
+        /// <summary>
+        /// Sets a confirmation code of a user for validating their email
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="confirmationCode"></param>
+        /// <returns></returns>
+        public Task<bool> SetConfirmationCodeAsync(long userId, string confirmationCode);
+
+        /// <summary>
+        /// Validates if a confirmation code is correct.
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="confirmationCode"></param>
+        /// <returns></returns>
+        public Task<(bool ConfirmationSuccessful, long UserId)> ValidateConfirmationCodeAsync(string confirmationCode);
     }
 }

@@ -26,7 +26,7 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
             return null;
         }
 
-        return project.ToIPamProject();
+        return project.ToUserLogic();
     }
 
     public  override async Task<bool> CreateAsync(IPamSqlObject data)
@@ -42,20 +42,10 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         if (data is IPamProject pamProject)
         {
             pamProject.Id = Project.ProjectIdGenerator.CreateId();
-            return await base.CreateAsync(pamProject.ToDbProject());
+            return await base.CreateAsync(pamProject.ToBusinessLogic());
         }
 
         return await base.CreateAsync(data);
-    }
-
-    public override async Task<bool> UpdateOrCreateAsync(IPamSqlObject data)
-    {
-        if (!await ExistsAsync(data.Id))
-        {
-            return await CreateAsync(data);
-        }
-        
-        return await base.UpdateOrCreateAsync(data);
     }
 
     public async Task<IPamProject> LoadOwnerAsync(IPamProject item)
@@ -154,10 +144,28 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
 
         return item;
     }
-
-    public async Task<bool> ValidateTokenAsync(long projectId, string token)
+    
+    public async Task<bool> ValidateTokenAsync(string token)
     {
         await using var context = new PgSqlContext();
+        
+        if (!token.StartsWith("PamToken/-//"))
+        {
+            return false;
+        }
+
+        var tokenParts = token.Split("/-//");
+        
+        if (tokenParts.Length < 3)
+        {
+            return false;
+        }
+        
+        if (!long.TryParse(tokenParts[1], out long projectId))
+        {
+            return false;
+        }
+        
         var apiKeys = context.ApiKeys.Where(x => x.ProjectId == projectId);
 
         foreach (var apiKey in apiKeys)
@@ -191,29 +199,30 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         return await HasPermissionAsync(projectId, 0, username, permissions);
     }
 
-    public async Task<string> CreateTokenAsync(long projectId)
+    public async Task<string> CreateTokenAsync(long projectId, DateTime expiryTime)
     {
         if (projectId <= 0)
         {
             throw new ArgumentException("Invalid parameter. Project Id must be above zero.", nameof(projectId));
         }
+        
+        if(!await ExistsAsync(projectId))
+        {
+            return null;
+        }
 
         await using var context = new PgSqlContext();
-        var pw = CreatePassword();
-
-
-        context.ApiKeys.Add(new ApiKey
+        
+        var apiKey = new ApiKey
         {
             ProjectId = projectId,
-            CredentialHash = null,
-            
-            //Expiration timeout if not used.
-            TTL = DateTime.Now.AddMonths(6)
-        });
-
+            TTL = expiryTime == DateTime.MaxValue ? expiryTime : null
+        };
+        
+        var privateToken = apiKey.CreateToken();
+        context.ApiKeys.Add(apiKey);
         await context.SaveChangesAsync();
-
-        return pw;
+        return privateToken;
     }
 
     public async Task<bool> RemoveTokenAsync(long projectId, long apiToken)
@@ -376,16 +385,6 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         }
 
         return false;
-    }
-
-
-    private static readonly RandomNumberGenerator RngGenerator =  RandomNumberGenerator.Create();
-    
-    private static string CreatePassword()
-    {
-        var tokenBuffer = new byte[64];
-        RngGenerator.GetNonZeroBytes(tokenBuffer);
-        return Convert.ToBase64String(tokenBuffer);
     }
 
     #endregion

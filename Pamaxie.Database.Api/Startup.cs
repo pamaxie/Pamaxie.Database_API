@@ -45,6 +45,7 @@ public sealed class Startup
 
         AppConfigManagement.LoadConfiguration();
         services.AddControllers();
+        
         services.AddAuthentication(x => {
                 x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme; })

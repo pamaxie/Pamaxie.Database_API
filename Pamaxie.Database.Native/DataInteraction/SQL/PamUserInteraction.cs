@@ -26,7 +26,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         }
         
         
-        return user.ToIPamUser();
+        return user.ToUserLogic();
     }
     
     public override async Task<bool> CreateAsync(IPamSqlObject data)
@@ -34,7 +34,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         if (data is IPamUser pamUser)
         {
             pamUser.Id = User.UserIdGenerator.CreateId();
-            return await base.CreateAsync(pamUser.ToDbUser());
+            return await base.CreateAsync(pamUser.ToBusinessLogic());
         }
         
         return await base.CreateAsync(data);
@@ -44,7 +44,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
     {
         if (data is IPamUser pamUser)
         {
-            return await base.UpdateAsync(pamUser.ToDbUser());
+            return await base.UpdateAsync(pamUser.ToBusinessLogic());
         }
         
         return await base.UpdateAsync(data);
@@ -59,7 +59,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         }
 
         await using var context = new PgSqlContext();
-        return context.Users.FirstOrDefault(x => x.Username == username)?.ToIPamUser();
+        return context.Users.FirstOrDefault(x => x.Username == username)?.ToUserLogic();
     }
 
     ///<inheritdoc cref="ExistsUsernameAsync"/>
@@ -96,7 +96,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         
         await LoadProjectsAsync(user);
         await LoadKnownIpsAsync(user);
-        await LoadTwoFactorOptionsAsync(user);
+        //await LoadTwoFactorOptionsAsync(user);
 
         return user;
     }
@@ -110,20 +110,19 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         }
 
         await using var context = new PgSqlContext();
-        var projects = context.ProjectUsers.Where(x => x.UserId == user.Id);
+        var projectUsers = context.ProjectUsers.Where(x => x.UserId == user.Id);
         user.Projects = new LazyList<(IPamProject Project, long ProjectId)>();
 
-        foreach (var project in projects)
+        foreach (var projectUser in projectUsers)
         {
-            var dbData = await PamaxieDatabaseService.ProjectSingleton.GetAsync(project.ProjectId);
+            var dbData = await PamaxieDatabaseService.ProjectSingleton.GetAsync(projectUser.ProjectId);
             if (dbData is not Project projectData)
             {
                 throw new Exception(
                     "Sadly we were not able to load the projects because of an internal server error. " +
                     "Please try again at a later time or contact your system administrator.");
             }
-            
-            
+
             var newProject = new PamProject
             {
                 Id = projectData.Id,
@@ -131,14 +130,14 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
                 Owner = new LazyObject<(IPamUser User, long UserId)>() { Data = ( null, projectData.OwnerId ), IsLoaded = false },
                 LastModifiedUser = new LazyObject<(IPamUser User, long UserId)>() { Data = ( null, projectData.LastModifiedUserId ), IsLoaded = false},
                 CreationDate = projectData.CreationDate,
-                LastModified = projectData.LastModified,
+                LastModifiedAt = projectData.LastModified,
                 Users = new LazyList<(long UserId, ProjectPermissions Permission)>() { IsLoaded = false },
                 ApiTokens = new LazyList<(string Token, DateTime LastUsage)>(){IsLoaded = false},
                 Flags = projectData.Flags,
                 TTL = projectData.TTL
             };
             
-            user.Projects.Add((newProject, project.Id));
+            user.Projects.Add((newProject, projectUser.Id));
         }
 
         return user;
@@ -181,7 +180,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         return projectUser?.Permissions ?? ProjectPermissions.None;
     }
     
-    /// <inheritdoc cref="LoadTwoFactorOptionsAsync"/>
+    /*/// <inheritdoc cref="LoadTwoFactorOptionsAsync"/>
     public async Task<IPamUser> LoadTwoFactorOptionsAsync(IPamUser user)
     {   
         if (user == null)
@@ -194,11 +193,11 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         
         foreach (var twoFactorOption in twoFactorOptions)
         {
-            user.TwoFactorOptions.Add((twoFactorOption.Type, twoFactorOption.PublicKey));
+            user.TwoFactorOptions.Add((twoFactorOption.Type));
         }
 
         return user;
-    }
+    }*/
     
     /// <inheritdoc cref="LoadKnownIpsAsync"/>
     public async Task<IPamUser> LoadKnownIpsAsync(IPamUser user)
@@ -230,5 +229,47 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
     {
         await using var context = new PgSqlContext();
         return context.Users.FirstOrDefault(x => x.Username == username)?.Id ?? 0;
+    }
+
+    /// <inheritdoc cref="SetConfirmationCodeAsync"/>
+    public async Task<bool> SetConfirmationCodeAsync(long userId, string confirmationCode)
+    {
+        await using var context = new PgSqlContext();
+
+        if (context.EmailConfirmations.Any(x => x.UserId == userId))
+        {
+            context.EmailConfirmations.Update(new EmailConfirmation()
+                {UserId = userId, ConfirmationCode = confirmationCode});
+        }
+        else
+        {
+            await context.EmailConfirmations.AddAsync(new EmailConfirmation()
+                {UserId = userId, ConfirmationCode = confirmationCode});
+        }
+
+        await context.SaveChangesAsync();
+
+        return true;
+    }
+
+    /// <inheritdoc cref="ValidateConfirmationCodeAsync"/>
+    public async Task<(bool ConfirmationSuccessful, long UserId)> ValidateConfirmationCodeAsync(string confirmationCode)
+    {
+        await using var context = new PgSqlContext();
+        if (!context.EmailConfirmations.Any(x => x.ConfirmationCode == confirmationCode))
+        {
+            return (false, 0);
+        }
+
+        var confirmation = context.EmailConfirmations.FirstOrDefault(x => x.ConfirmationCode == confirmationCode);
+
+        if (confirmation == null)
+        {
+            return (false, 0);
+        }
+        
+        context.EmailConfirmations.Remove(confirmation);
+        await context.SaveChangesAsync();
+        return (true, confirmation.UserId);
     }
 }

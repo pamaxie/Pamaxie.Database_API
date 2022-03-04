@@ -7,14 +7,14 @@ namespace Pamaxie.Database.Native.DataInteraction.BusinessLogicExtensions;
 
 public static class ProjectExtensions
 {
-    public static IPamProject ToIPamProject(this Project user)
+    public static IPamProject ToUserLogic(this Project user)
     {
         var pamUser = new PamProject()
         {
             Id = user.Id,
             Name = user.Name,
             CreationDate = user.CreationDate,
-            LastModified = user.LastModified,
+            LastModifiedAt = user.LastModified,
             LastModifiedUser = new LazyObject<(IPamUser User, long UserId)>(),
             Owner = new LazyObject<(IPamUser User, long UserId)>() {Data = (null, UserId: user.OwnerId), IsLoaded = false},
             ApiTokens = new LazyList<(string Token, DateTime LastUsed)>(){IsLoaded = false},
@@ -26,14 +26,14 @@ public static class ProjectExtensions
         return pamUser;
     }
     
-    public static Project ToDbProject(this IPamProject project)
+    public static Project ToBusinessLogic(this IPamProject project)
     {
         var pamUser = new Project
         {
             Name = project.Name,
             Flags = ProjectFlags.None,
             CreationDate = project.CreationDate,
-            LastModified = project.LastModified,
+            LastModified = project.LastModifiedAt,
             LastModifiedUserId = project.LastModifiedUser?.Data.UserId ?? 0,
             OwnerId = project.Owner?.Data.UserId ?? 0,
             TTL = project.TTL

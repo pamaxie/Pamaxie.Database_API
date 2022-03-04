@@ -32,10 +32,10 @@ public struct DockerEnvVars
     /// <summary>
     /// Default port the application uses
     /// </summary>
-    internal const string DefaultPortEnvVar = "DefaultPortEnvVar";
-
+    internal const string HostStringEnvVar = "Hosts";
+    
     /// <summary>
-    /// Use HTTPs for the database API
+    /// Token for Twilio sendgrid, used for Email verification
     /// </summary>
-    internal const string UseHttpsEnvVar = "UseHttps";
+    internal const string SendGridEnvVar = "SendGridToken";
 }

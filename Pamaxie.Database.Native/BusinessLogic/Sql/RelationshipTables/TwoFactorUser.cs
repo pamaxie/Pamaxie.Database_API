@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using IdGen;
@@ -37,9 +37,9 @@ public class TwoFactorUser : IPamSqlObject
     public TwoFactorType Type { get; set; }
     
     /// <summary>
-    /// Public key of the two factor authentication
+    /// Secret of the two factor authentication
     /// </summary>
-    public string PublicKey { get; set; }
+    public string Secret { get; set; }
 
     /// <inheritdoc cref="IPamSqlObject.TTL"/>
     public DateTime? TTL
@@ -56,4 +56,4 @@ public class TwoFactorUser : IPamSqlObject
             _ttl = null;
         }
     }
-}
+}*/

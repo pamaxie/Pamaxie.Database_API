@@ -37,8 +37,10 @@ public class PgSqlContext : DbContext
     /// <inheritdoc cref="ProjectUsers"/>
     public DbSet<ProjectUser> ProjectUsers { get; set; }
     
-    /// <inheritdoc cref="TwoFactorUsers"/>
-    public DbSet<TwoFactorUser> TwoFactorUsers { get; set; }
+    public DbSet<EmailConfirmation> EmailConfirmations { get; set; }
+
+    // /// <inheritdoc cref="TwoFactorUsers"/>
+    // public DbSet<TwoFactorUser> TwoFactorUsers { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
