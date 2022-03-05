@@ -38,4 +38,9 @@ public struct DockerEnvVars
     /// Token for Twilio sendgrid, used for Email verification
     /// </summary>
     internal const string SendGridEnvVar = "SendGridToken";
+
+    /// <summary>
+    /// Host url so we can make sure we offer the right url while we send certain emails.
+    /// </summary>
+    internal const string HostUrl = "EndpointUrl";
 }

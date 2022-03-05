@@ -29,15 +29,12 @@ namespace Pamaxie.Authentication
         /// <returns>A authentication token object</returns>
         public JwtToken CreateToken(long userId, JwtTokenConfig authTokenSettings = null, bool IsApplicationToken = false, bool longLivedToken = false)
         {
-            //Application tokens are always long lived
-            longLivedToken = IsApplicationToken;
+
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+
+            byte[] key = Encoding.ASCII.GetBytes(authTokenSettings.Secret);
+            DateTime? expires = null;
             
-            //Authentication successful so generate JWT Token
-            var tokenHandler = new JwtSecurityTokenHandler();
-
-            var key = Encoding.ASCII.GetBytes(authTokenSettings.Secret);
-            DateTime? expires;
-
             if (longLivedToken)
             {
                 expires = DateTime.Now.AddDays(authTokenSettings.LongLivedExpiresInDays);
@@ -52,18 +49,12 @@ namespace Pamaxie.Authentication
                 throw new InvalidOperationException("We hit an unexpected problem while generating the token");
             }
 
-            var token = new JwtSecurityToken("Pamaxie", "Pamaxie", null, DateTime.Now.ToUniversalTime(), expires, new SigningCredentials(new SymmetricSecurityKey(key),SecurityAlgorithms.HmacSha256Signature))
-                {
-                    Payload =
-                    {
-                        ["userId"] = userId,
-                        ["applicationToken"] = IsApplicationToken
-                    }
-                };
-            
+            var token = new JwtSecurityToken("Pamaxie", "Pamaxie", null, DateTime.Now.ToUniversalTime(), expires, new SigningCredentials(new SymmetricSecurityKey(key),SecurityAlgorithms.HmacSha256Signature));
+            token.Payload["userId"] = userId;
+            token.Payload["applicationToken"] = IsApplicationToken;
             var handler = new JwtSecurityTokenHandler();
             var jwt = handler.WriteToken(token);
-            return new JwtToken { ExpiresAtUTC = (DateTime)expires, Token = jwt };
+            return new JwtToken { ExpiresAtUTC = (DateTime)expires, Token = jwt, IsLongLived = longLivedToken};
         }
 
         /// <summary>
@@ -71,10 +62,15 @@ namespace Pamaxie.Authentication
         /// </summary>
         /// <param name="authToken"></param>
         /// <returns></returns>
-        public static string GetUserKey(string authToken)
+        public static long GetUserKey(string authToken)
         {
             var jwtToken = new JwtSecurityToken(authToken.Replace("Bearer ", string.Empty));
-            return jwtToken.Claims.FirstOrDefault(x => x.Type == "userId")?.Value;
+            if (long.TryParse(jwtToken.Claims.FirstOrDefault(x => x.Type == "userId")?.Value, out var userId))
+            {
+                return userId;
+            }
+
+            return -100;
         }
         
         /// <summary>

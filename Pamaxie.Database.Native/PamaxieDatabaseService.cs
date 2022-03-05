@@ -13,6 +13,7 @@ using Pamaxie.Database.Extensions;
 using Pamaxie.Database.Extensions.DataInteraction;
 using Pamaxie.Database.Native.DataInteraction;
 using Pamaxie.Database.Native.DataInteraction.BusinessLogicExtensions;
+using Spectre.Console;
 using StackExchange.Redis;
 
 namespace Pamaxie.Database.Native;
@@ -91,19 +92,19 @@ public sealed class PamaxieDatabaseService : IPamaxieDatabaseService
 
         try
         {
-            DbConnectionHost1 = ConnectionMultiplexer.Connect(connectionParams.Db1Config);
-            PgSqlContext.SqlConnectionString = connectionParams.Db2Config;
+            PgSqlContext.SqlConnectionString = connectionParams.Db1Config;
+            DbConnectionHost1 = ConnectionMultiplexer.Connect(connectionParams.Db2Config);
         }
         catch (RedisConnectionException)
         {
-            Debug.WriteLine("Unable to connect to Redis database. Please validate that it's connection parameters are correct.");
+            AnsiConsole.MarkupLine("[red]Unable to connect to Redis database. Please validate that it's connection parameters are correct.[/]");
         }
 
         using (var dbContext = new PgSqlContext())
         {
             if (!dbContext.Database.CanConnect())
             {
-                Debug.WriteLine("Unable to connect to the Postgres database. Please validate that it's connection parameters are correct.");
+                AnsiConsole.MarkupLine("[red]Unable to connect to the Postgres database. Please validate that it's connection parameters are correct.[/]");
             }
         }
 
@@ -143,8 +144,7 @@ public sealed class PamaxieDatabaseService : IPamaxieDatabaseService
     public void ValidateDatabase()
     {
         using var dbContext = new PgSqlContext();
-        
-        Debug.WriteLine("Ensuring Database is postgres");
+        AnsiConsole.MarkupLine("[yellow]Ensuring the database can be connected to[/]");
 
         if (!IsDbConnected)
         {
@@ -157,12 +157,13 @@ public sealed class PamaxieDatabaseService : IPamaxieDatabaseService
             throw new InvalidOperationException("The underlying database is not postgres");
         }
         
+        AnsiConsole.MarkupLine("[yellow]Checking if database has any pending migrations[/]");
         var pendingMigrations = dbContext.Database.GetPendingMigrations();
         
         if (pendingMigrations.Any())
         {
-            Debug.Write("Migrations pending... applying them now! " +
-                        "Also automatically creating your database if it doesn't exist yet");
+            AnsiConsole.MarkupLine("[yellow]Migrations pending... applying them now! " +
+                                   "Also automatically creating your database if it doesn't exist yet[/]");
             dbContext.Database.Migrate();
         }
 
@@ -177,20 +178,20 @@ public sealed class PamaxieDatabaseService : IPamaxieDatabaseService
     public async Task ValidateDatabaseAsync()
     {
         await using var dbContext = new PgSqlContext();
-        
-        Debug.WriteLine("Ensuring Database is postgres");
+        AnsiConsole.MarkupLine("[yellow]Ensuring the database can be connected to[/]");
         
         if (!dbContext.Database.IsNpgsql())
         {
             throw new InvalidOperationException("The underlying database is not postgres");
         }
 
+        AnsiConsole.MarkupLine("[yellow]Checking if database has any pending migrations[/]");
         var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
         
         if (pendingMigrations.Any())
         {
-            Debug.Write("Migrations pending... applying them now! " +
-                        "Also automatically creating your database if it doesn't exist yet");
+            AnsiConsole.MarkupLine("[yellow]Migrations pending... applying them now! " +
+                                   "Also automatically creating your database if it doesn't exist yet[/]");
             await dbContext.Database.MigrateAsync();
         }
         

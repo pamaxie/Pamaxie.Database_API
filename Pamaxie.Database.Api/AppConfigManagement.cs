@@ -30,9 +30,12 @@ public class AppConfigManagement
         
     private const string DbSettingsNode = "DbSettings";
     private const string JwtSettingsNode = "JwtSettings";
+
+    public static Uri HostUrl = new Uri("https://api.pamaxie.com/");
     
-    
-    public const string SendGridEnvVar = DockerEnvVars.SendGridEnvVar;
+    public const string SendGridVar = DockerEnvVars.SendGridEnvVar;
+    public const string HostUrlVar = DockerEnvVars.HostUrl;
+        
     private static readonly string SettingsFileName = "PamSettings.json";
 
     /// <summary>
@@ -137,11 +140,11 @@ public class AppConfigManagement
                 return false;
             }
         }
-            
+        
         JObject jObject = JObject.Parse(fileText);
         var jsonDbSettings = jObject.SelectToken(DbSettingsNode);
         var jsonJwtSettings = jObject.SelectToken(JwtSettingsNode);
-        var jsonSendgridToken = jObject.SelectToken(SendGridEnvVar);
+        var jsonSendgridToken = jObject.SelectToken(SendGridVar);
 
         if (jsonDbSettings == null)
         {
@@ -197,6 +200,14 @@ public class AppConfigManagement
             var jwtSettings = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar, EnvironmentVariableTarget.Machine);
             var sendgridToken =
                 Environment.GetEnvironmentVariable(DockerEnvVars.SendGridEnvVar, EnvironmentVariableTarget.Machine);
+            
+            var applicationUrl =
+                Environment.GetEnvironmentVariable(DockerEnvVars.HostUrl, EnvironmentVariableTarget.Machine);
+
+            if (!string.IsNullOrWhiteSpace(applicationUrl))
+            {
+                HostUrl = new Uri(applicationUrl);
+            }
 
             if (string.IsNullOrWhiteSpace(dbSettings) || string.IsNullOrWhiteSpace(jwtSettings) || string.IsNullOrWhiteSpace(sendgridToken))
             {
@@ -208,7 +219,7 @@ public class AppConfigManagement
 
             JwtSettings = JsonConvert.DeserializeObject<JwtTokenConfig>(jwtSettings);
             DbSettings = JsonConvert.DeserializeObject<DbSettings>(dbSettings);
-            Environment.SetEnvironmentVariable(SendGridEnvVar, sendgridToken, EnvironmentVariableTarget.Process);
+            Environment.SetEnvironmentVariable(SendGridVar, sendgridToken, EnvironmentVariableTarget.Process);
             return;
         }
 
@@ -250,11 +261,21 @@ public class AppConfigManagement
                     "Invalid formatting inside of the settings file. Please validate the settings are valid Json");
             }
 
-            var sendgridToken = jObject.SelectToken(SendGridEnvVar);
+            var sendgridToken = jObject.SelectToken(SendGridVar);
             if (sendgridToken != null)
             {
                 var token = sendgridToken.ToObject<string>();
-                Environment.SetEnvironmentVariable(SendGridEnvVar, token, EnvironmentVariableTarget.Process);
+                Environment.SetEnvironmentVariable(SendGridVar, token, EnvironmentVariableTarget.Process);
+            }
+
+            var hostUrl = jObject.SelectToken(HostUrlVar);
+            if (hostUrl != null)
+            {
+                var hostingUrl = hostUrl.ToObject<string>();
+                if (!string.IsNullOrWhiteSpace(hostingUrl))
+                {
+                    HostUrl = new Uri(hostingUrl);
+                }
             }
 
         }
@@ -416,7 +437,7 @@ public class AppConfigManagement
             var jObject1 = new JObject();
             jObject1.Add(DbSettingsNode, dbConnectionConfig);
             jObject1.Add(JwtSettingsNode, jwtBearerConfig);
-            jObject1.Add(SendGridEnvVar, sendgridConfig);
+            jObject1.Add(SendGridVar, sendgridConfig);
             File.WriteAllText(SettingsFileName, JsonConvert.SerializeObject(jObject1, Formatting.Indented));
         }
 

@@ -49,6 +49,25 @@ namespace Pamaxie.Database.Native.Migrations
                     b.ToTable("api_keys", (string)null);
                 });
 
+            modelBuilder.Entity("Pamaxie.Database.Native.Sql.EmailConfirmation", b =>
+                {
+                    b.Property<long>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("UserId"));
+
+                    b.Property<string>("ConfirmationCode")
+                        .HasColumnType("text")
+                        .HasColumnName("confirmation_code");
+
+                    b.HasKey("UserId")
+                        .HasName("pk_email_confirmations");
+
+                    b.ToTable("email_confirmations", (string)null);
+                });
+
             modelBuilder.Entity("Pamaxie.Database.Native.Sql.KnownUserIp", b =>
                 {
                     b.Property<long>("Id")
@@ -86,8 +105,8 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("creation_date");
 
-                    b.Property<int>("Flags")
-                        .HasColumnType("integer")
+                    b.Property<long>("Flags")
+                        .HasColumnType("bigint")
                         .HasColumnName("flags");
 
                     b.Property<DateTime>("LastModified")
@@ -155,37 +174,6 @@ namespace Pamaxie.Database.Native.Migrations
                     b.ToTable("project_users", (string)null);
                 });
 
-            modelBuilder.Entity("Pamaxie.Database.Native.Sql.TwoFactorUser", b =>
-                {
-                    b.Property<long>("Id")
-                        .HasColumnType("bigint")
-                        .HasColumnName("id");
-
-                    b.Property<string>("PublicKey")
-                        .HasColumnType("text")
-                        .HasColumnName("public_key");
-
-                    b.Property<DateTime?>("TTL")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ttl");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer")
-                        .HasColumnName("type");
-
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_two_factor_users");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_two_factor_users_user_id");
-
-                    b.ToTable("two_factor_users", (string)null);
-                });
-
             modelBuilder.Entity("Pamaxie.Database.Native.Sql.User", b =>
                 {
                     b.Property<long>("Id")
@@ -206,8 +194,8 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("text")
                         .HasColumnName("first_name");
 
-                    b.Property<int>("Flags")
-                        .HasColumnType("integer")
+                    b.Property<long>("Flags")
+                        .HasColumnType("bigint")
                         .HasColumnName("flags");
 
                     b.Property<string>("LastName")

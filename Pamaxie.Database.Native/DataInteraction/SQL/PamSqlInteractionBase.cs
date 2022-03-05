@@ -58,10 +58,10 @@ public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, long>
     public async Task<bool> ExistsAsync(long uniqueKey)
     {
         var item = await GetAsync(uniqueKey);
-        return item == null;
+        return item != null;
     }
 
-    public async Task<bool> DeleteAsync(IPamSqlObject data)
+    public virtual async Task<bool> DeleteAsync(IPamSqlObject data)
     {
         await using var context = new PgSqlContext();
 

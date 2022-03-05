@@ -47,6 +47,16 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
 
         return await base.CreateAsync(data);
     }
+    
+    public override Task<bool> DeleteAsync(IPamSqlObject data)
+    {
+        if (data is IPamProject project)
+        {
+            return base.DeleteAsync(project.ToBusinessLogic());
+        }
+        
+        return base.DeleteAsync(data);
+    }
 
     public async Task<IPamProject> LoadOwnerAsync(IPamProject item)
     {

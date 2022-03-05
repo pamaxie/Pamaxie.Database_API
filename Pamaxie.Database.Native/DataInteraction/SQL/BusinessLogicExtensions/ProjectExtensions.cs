@@ -7,39 +7,41 @@ namespace Pamaxie.Database.Native.DataInteraction.BusinessLogicExtensions;
 
 public static class ProjectExtensions
 {
-    public static IPamProject ToUserLogic(this Project user)
+    public static IPamProject ToUserLogic(this Project project)
     {
-        var pamUser = new PamProject()
+        var pamProject = new PamProject()
         {
-            Id = user.Id,
-            Name = user.Name,
-            CreationDate = user.CreationDate,
-            LastModifiedAt = user.LastModified,
+            Id = project.Id,
+            Name = project.Name,
+            CreationDate = project.CreationDate,
+            LastModifiedAt = project.LastModified,
             LastModifiedUser = new LazyObject<(IPamUser User, long UserId)>(),
-            Owner = new LazyObject<(IPamUser User, long UserId)>() {Data = (null, UserId: user.OwnerId), IsLoaded = false},
+            Owner = new LazyObject<(IPamUser User, long UserId)>() {Data = (null, UserId: project.OwnerId), IsLoaded = false},
             ApiTokens = new LazyList<(string Token, DateTime LastUsed)>(){IsLoaded = false},
             Users = new LazyList<(long UserId, ProjectPermissions Permission)>(),
-            Flags = user.Flags,
-            TTL = user.TTL
-        };
-
-        return pamUser;
-    }
-    
-    public static Project ToBusinessLogic(this IPamProject project)
-    {
-        var pamUser = new Project
-        {
-            Name = project.Name,
-            Flags = ProjectFlags.None,
-            CreationDate = project.CreationDate,
-            LastModified = project.LastModifiedAt,
-            LastModifiedUserId = project.LastModifiedUser?.Data.UserId ?? 0,
-            OwnerId = project.Owner?.Data.UserId ?? 0,
+            Flags = project.Flags,
             TTL = project.TTL
         };
+
+        return pamProject;
+    }
+    
+    public static Project ToBusinessLogic(this IPamProject pamProject)
+    {
+        var project = new Project
+        {
+            Name = pamProject.Name,
+            Flags = ProjectFlags.None,
+            CreationDate = pamProject.CreationDate,
+            LastModified = pamProject.LastModifiedAt,
+            LastModifiedUserId = pamProject.LastModifiedUser?.Data.UserId ?? 0,
+            OwnerId = pamProject.Owner?.Data.UserId ?? 0,
+            TTL = pamProject.TTL
+        };
+
+        project.Id = pamProject.Id;
         
-        return pamUser;
+        return project;
     }
 
     /// <summary>
@@ -50,13 +52,13 @@ public static class ProjectExtensions
     public static async Task<Project> LoadDbProjectAsync(this IPamProject project)
     {
         PamSqlInteractionBase<Project> sqlInteractionBase = new();
-        var userObj = await sqlInteractionBase.GetAsync(project.Id);
+        var pamObj = await sqlInteractionBase.GetAsync(project.Id);
 
-        if (userObj is not Project dbUser)
+        if (pamObj is not Project dbProject)
         {
             return null;
         }
 
-        return dbUser;
+        return dbProject;
     }
 }

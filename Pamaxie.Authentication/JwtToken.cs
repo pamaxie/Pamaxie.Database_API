@@ -16,5 +16,10 @@ namespace Pamaxie.Authentication
         /// The expiration date of the token
         /// </summary>
         public DateTime ExpiresAtUTC { get; init; }
+        
+        /// <summary>
+        /// Is the token long lived?
+        /// </summary>
+        public bool IsLongLived { get; set; }
     }
 }

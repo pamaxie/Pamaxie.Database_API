@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -20,14 +21,7 @@ public static class Program
     /// <param name="args">Args to be passed</param>
     public static void Main(string[] args)
     {
-        try
-        {
-            CreateHostBuilder(args).Build().Run();
-        }
-        catch (Exception exception)
-        {
-            AnsiConsole.WriteException(exception, ExceptionFormats.ShortenEverything);
-        }
+        CreateHostBuilder(args).Build().Run();
     }
 
     /// <summary>

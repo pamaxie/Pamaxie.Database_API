@@ -12,8 +12,8 @@ using Pamaxie.Database.Native;
 namespace Pamaxie.Database.Native.Migrations
 {
     [DbContext(typeof(PgSqlContext))]
-    [Migration("20220216235550_Removed-Pfp-Requirement")]
-    partial class RemovedPfpRequirement
+    [Migration("20220305130512_Initial-Migration")]
+    partial class InitialMigration
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -49,6 +49,25 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasDatabaseName("ix_api_keys_project_id_credential_hash");
 
                     b.ToTable("api_keys", (string)null);
+                });
+
+            modelBuilder.Entity("Pamaxie.Database.Native.Sql.EmailConfirmation", b =>
+                {
+                    b.Property<long>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("UserId"));
+
+                    b.Property<string>("ConfirmationCode")
+                        .HasColumnType("text")
+                        .HasColumnName("confirmation_code");
+
+                    b.HasKey("UserId")
+                        .HasName("pk_email_confirmations");
+
+                    b.ToTable("email_confirmations", (string)null);
                 });
 
             modelBuilder.Entity("Pamaxie.Database.Native.Sql.KnownUserIp", b =>
@@ -88,8 +107,8 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("creation_date");
 
-                    b.Property<int>("Flags")
-                        .HasColumnType("integer")
+                    b.Property<long>("Flags")
+                        .HasColumnType("bigint")
                         .HasColumnName("flags");
 
                     b.Property<DateTime>("LastModified")
@@ -157,37 +176,6 @@ namespace Pamaxie.Database.Native.Migrations
                     b.ToTable("project_users", (string)null);
                 });
 
-            modelBuilder.Entity("Pamaxie.Database.Native.Sql.TwoFactorUser", b =>
-                {
-                    b.Property<long>("Id")
-                        .HasColumnType("bigint")
-                        .HasColumnName("id");
-
-                    b.Property<string>("PublicKey")
-                        .HasColumnType("text")
-                        .HasColumnName("public_key");
-
-                    b.Property<DateTime?>("TTL")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("ttl");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer")
-                        .HasColumnName("type");
-
-                    b.Property<long>("UserId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_two_factor_users");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_two_factor_users_user_id");
-
-                    b.ToTable("two_factor_users", (string)null);
-                });
-
             modelBuilder.Entity("Pamaxie.Database.Native.Sql.User", b =>
                 {
                     b.Property<long>("Id")
@@ -208,9 +196,13 @@ namespace Pamaxie.Database.Native.Migrations
                         .HasColumnType("text")
                         .HasColumnName("first_name");
 
-                    b.Property<int>("Flags")
-                        .HasColumnType("integer")
+                    b.Property<long>("Flags")
+                        .HasColumnType("bigint")
                         .HasColumnName("flags");
+
+                    b.Property<bool>("HasClosedAccess")
+                        .HasColumnType("boolean")
+                        .HasColumnName("has_closed_access");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -234,6 +226,10 @@ namespace Pamaxie.Database.Native.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("username");
+
+                    b.Property<bool>("UsingClosedAccess")
+                        .HasColumnType("boolean")
+                        .HasColumnName("using_closed_access");
 
                     b.HasKey("Id")
                         .HasName("pk_users");

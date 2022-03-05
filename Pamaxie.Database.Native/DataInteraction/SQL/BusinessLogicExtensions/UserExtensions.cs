@@ -20,7 +20,8 @@ public static class UserExtensions
             KnownIps = new LazyList<string>(){IsLoaded = false},
             Projects = new LazyList<(IPamProject Project, long ProjectId)>(){IsLoaded = false},
             Flags = user.Flags,
-            TTL = user.TTL
+            TTL = user.TTL,
+            CreationDate = user.CreationDate
         };
 
         return pamUser;
@@ -37,8 +38,11 @@ public static class UserExtensions
             FirstName = user.FirstName,
             PasswordHash = user.PasswordHash,
             Flags = user.Flags,
-            TTL = user.TTL
+            TTL = user.TTL,
+            CreationDate = user.CreationDate
         };
+
+        pamUser.Id = user.Id;
 
         return pamUser;
     }

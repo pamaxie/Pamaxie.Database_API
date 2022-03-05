@@ -50,6 +50,16 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         return await base.UpdateAsync(data);
     }
 
+    public override async Task<bool> DeleteAsync(IPamSqlObject data)
+    {
+        if (data is IPamUser user)
+        {
+            return await base.DeleteAsync(user.ToBusinessLogic());
+        }
+        
+        return await base.DeleteAsync(data);
+    }
+
     /// <inheritdoc cref="GetAsync(string)"/>
     public async Task<IPamUser> GetAsync(string username)
     {
@@ -268,8 +278,8 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
             return (false, 0);
         }
         
-        context.EmailConfirmations.Remove(confirmation);
-        await context.SaveChangesAsync();
+        //context.EmailConfirmations.Remove(confirmation);
+        //await context.SaveChangesAsync();
         return (true, confirmation.UserId);
     }
 }
