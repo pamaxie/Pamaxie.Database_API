@@ -3,6 +3,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Isopoh.Cryptography.Argon2;
+using Microsoft.EntityFrameworkCore;
 using Pamaxie.Data;
 using Pamaxie.Database.Extensions.DataInteraction;
 using Pamaxie.Database.Native.DataInteraction.BusinessLogicExtensions;
@@ -29,8 +30,13 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         return project.ToUserLogic();
     }
 
-    public  override async Task<bool> CreateAsync(IPamSqlObject data)
+    public  override async Task<(bool, long)> CreateAsync(IPamSqlObject data)
     {
+        if (data == null)
+        {
+            throw new ArgumentException(nameof(data));
+        }
+        
         await using var context = new PgSqlContext();
         
         if (data is Project project)
@@ -50,6 +56,11 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
     
     public override Task<bool> DeleteAsync(IPamSqlObject data)
     {
+        if (data == null)
+        {
+            throw new ArgumentNullException(nameof(data));
+        }
+        
         if (data is IPamProject project)
         {
             return base.DeleteAsync(project.ToBusinessLogic());
@@ -58,8 +69,37 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         return base.DeleteAsync(data);
     }
 
+    public override async Task<bool> UpdateAsync(IPamSqlObject data)
+    {
+        if (data == null)
+        {
+            throw new ArgumentNullException(nameof(data));
+        }
+        
+        if (data is IPamProject project)
+        {
+            await using var context = new PgSqlContext();
+            var toBeCreatedProject = project.ToBusinessLogic();
+            toBeCreatedProject.CreationDate = context.Projects.FirstOrDefault(x => x.Id == data.Id)?.CreationDate ?? DateTime.Now;
+
+            //Making sure flags are loaded if they haven't been changed by staff
+            if (toBeCreatedProject.Flags == ProjectFlags.None)
+            {
+                toBeCreatedProject.Flags = context.Projects.FirstOrDefault(x => x.Id == data.Id)?.Flags ?? ProjectFlags.None;
+            }
+            
+            return await base.UpdateAsync(toBeCreatedProject);
+        }
+        return await base.UpdateAsync(data);
+    }
+
     public async Task<IPamProject> LoadOwnerAsync(IPamProject item)
     {
+        if (item == null)
+        {
+            throw new ArgumentException(nameof(item));
+        }
+        
         if (item.Owner == null || item.Owner.Data.UserId <= 0)
         {
             throw new ArgumentException(
@@ -85,6 +125,11 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
 
     public async Task<IPamProject> LoadLastModifiedUserAsync(IPamProject item)
     {
+        if (item == null)
+        {
+            throw new ArgumentException(nameof(item));
+        }
+        
         if (item.LastModifiedUser == null || item.LastModifiedUser.Data.UserId <= 0)
         {
             throw new ArgumentException(
@@ -157,6 +202,11 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
     
     public async Task<bool> ValidateTokenAsync(string token)
     {
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            throw new ArgumentNullException(nameof(token));
+        }
+        
         await using var context = new PgSqlContext();
         
         if (!token.StartsWith("PamToken/-//"))
@@ -189,24 +239,18 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         return false;
     }
 
-    public async Task<bool> HasPermissionAsync(IPamProject project, ProjectPermissions permissions, string username)
+    public async Task<bool> HasPermissionAsync(long projectId,long userId, ProjectPermissions permissions)
     {
-        return await HasPermissionAsync(project.Id, 0, username, permissions);
-    }
+        await using var context = new PgSqlContext(); 
+        var projectUsers = context.ProjectUsers.Where(x => x.ProjectId == projectId);
+        var user = await projectUsers.FirstOrDefaultAsync(x => x.UserId == userId);
 
-    public async Task<bool> HasPermissionAsync(long projectId, ProjectPermissions permissions, long userId)
-    {
-        return await HasPermissionAsync(projectId, userId, string.Empty, permissions);
-    }
+        if (user != null && user.Permissions >= permissions)
+        {
+            return true;
+        }
 
-    public async Task<bool> HasPermissionAsync(IPamProject project, ProjectPermissions permissions, long userId)
-    {
-        return await HasPermissionAsync(project.Id, userId, string.Empty, permissions);
-    }
-
-    public async Task<bool> HasPermissionAsync(long projectId, ProjectPermissions permissions, string username)
-    {
-        return await HasPermissionAsync(projectId, 0, username, permissions);
+        return false;
     }
 
     public async Task<string> CreateTokenAsync(long projectId, DateTime expiryTime)
@@ -368,34 +412,10 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         return true;
     }
 
-    #region Helper Stuff
-
-    private async Task<bool> HasPermissionAsync(long projectId, long userId, string username, ProjectPermissions permissions)
+    public async Task<bool> IsOwnerAsync(long userId, long projectId)
     {
-        await using var context = new PgSqlContext(); 
-        var dbProjects = context.ProjectUsers.Where(x => x.ProjectId == projectId);
-        ProjectUser user;
-
-        if (string.IsNullOrWhiteSpace(username))
-        {
-            user = dbProjects.FirstOrDefault(x => x.UserId == userId);
-        }
-        else if (userId > 0)
-        {
-            var dbUser = context.Users.FirstOrDefault(x => x.Username == username);
-            user = dbProjects.FirstOrDefault(x => x.UserId == dbUser.Id);
-        }
-        else {
-            throw new InvalidOperationException("Please reach in either a username or a user id.");
-        }
-
-        if (user != null && user.Permissions >= permissions)
-        {
-            return true;
-        }
-
-        return false;
+        await using var context = new PgSqlContext();
+        return context.Projects.Any(x => x.Id == projectId && x.OwnerId == userId);
     }
-
-    #endregion
+    
 }

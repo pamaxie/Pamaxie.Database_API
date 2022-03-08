@@ -17,23 +17,25 @@ public class PamSqlInteractionBase<T> : IPamInteractionBase<IPamSqlObject, long>
         return obj is not T ? null : (IPamSqlObject) obj;
     }
 
-    public virtual async Task<bool> CreateAsync(IPamSqlObject data)
+    public virtual async Task<(bool, long)> CreateAsync(IPamSqlObject data)
     {
         await using var context = new PgSqlContext();
 
+        long userId = 0;
         try
         {
             await context.AddAsync(data);
             await context.SaveChangesAsync();
+            userId = data.Id;
         }
         catch (PostgresException)
         {
             Debug.WriteLine("Caught exception while trying to create object in the Postgres database. Please" +
                             "ensure the database is available and the objects reached in item contained a defined Id");
-            return false;
+            return (false, 0);
         }
 
-        return true;
+        return (true, userId);
     }
 
     public virtual async Task<bool> UpdateAsync(IPamSqlObject data)

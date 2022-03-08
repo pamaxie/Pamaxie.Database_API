@@ -9,7 +9,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
     /// </summary>
     /// <typeparam name="T">Storage Type</typeparam>
     /// <typeparam name="T2">Indexing Type</typeparam>
-    public interface IPamInteractionBase<T, in T2>
+    public interface IPamInteractionBase<T, T2>
     {
         ///  <summary>
         ///  Gets a <see cref="T"/> value from the service
@@ -24,7 +24,7 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <param name="data">The value that should be created</param>
         /// <returns>The created <see cref="T"/> value</returns>
         /// <exception cref="ArgumentException">The value already exist in the service</exception>
-        public Task<bool> CreateAsync(T data);
+        public Task<(bool wasCreated, T2 createdId)> CreateAsync(T data);
 
         /// <summary>
         /// Updates a <see cref="T"/> value inside the service,

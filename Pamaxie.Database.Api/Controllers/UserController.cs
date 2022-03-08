@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Pamaxie.Authentication;
 using Pamaxie.Data;
 using Pamaxie.Database.Extensions;
@@ -76,6 +77,7 @@ public sealed class UserController : ControllerBase
         }
 
         var newToken = _generator.CreateToken(authResult.user.Id, AppConfigManagement.JwtSettings, false, longLivedToken);
+        authResult.user.PasswordHash = null;
         var items = new { Token = newToken, User = authResult.user};
         return Ok(JsonConvert.SerializeObject(items, Formatting.Indented));
     }
@@ -88,6 +90,19 @@ public sealed class UserController : ControllerBase
     public async Task<ActionResult<JwtToken>> UpdateTask()
     {
         var token = Request.Headers["authorization"];
+        
+        if (JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
+
+        var userId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (userId < 1 || !await ValidateUserAccess(userId))
+        {
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
+        
         
         bool longLivedToken = false;
         using StreamReader reader = new StreamReader(HttpContext.Request.Body);
@@ -103,22 +118,6 @@ public sealed class UserController : ControllerBase
             return Unauthorized();
         }
 
-        var userId = JwtTokenGenerator.GetUserKey(token);
-
-        if (userId == 0)
-        {
-            return BadRequest("The entered token does not contain a valid user ID that can be read from it. " +
-                              "Please ensure this token is meant for this application and hasn't been tampered with.");
-        }
-
-        //Validate if the user was maybe deleted since the last auth
-        if (!await ValidateUserAccess(userId))
-        {
-            return Unauthorized(
-                "The token you entered is incorrect or the user of the Token was locked out of our system." +
-                "Please check your credentials. If you are sure they are correct please contact support.");
-        }
-
         var newToken = _generator.CreateToken(userId, AppConfigManagement.JwtSettings, false, longLivedToken);
         return newToken;
     }
@@ -132,7 +131,21 @@ public sealed class UserController : ControllerBase
     [Consumes(MediaTypeNames.Application.Json)]
     public async Task<ActionResult> CreateTask()
     {
-        var user = await GetRequestingPamUserAsync();
+        var token = Request.Headers["authorization"];
+        
+        if (JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
+
+        var userId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (userId < 1 || !await ValidateUserAccess(userId))
+        {
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
+        
+        var user = await GetRequestBodyPamUserAsync();
 
         if (user == null)
         {
@@ -169,12 +182,14 @@ public sealed class UserController : ControllerBase
             return Conflict("This username already exists.");
         }
 
-        if (!await _dbDriver.Service.Users.CreateAsync(user))
+        var creationResult = await _dbDriver.Service.Users.CreateAsync(user);
+        
+        if (!creationResult.wasCreated)
         {
             return StatusCode(500, "We hit an unexpected error while attempting to create the user.");
         }
 
-        user = (PamUser) await _dbDriver.Service.Users.GetAsync(user.UserName);
+        user = (PamUser) await _dbDriver.Service.Users.GetAsync(creationResult.createdId);
 
         if (!await SendConfirmationEmailAsync(user.Id, user.Email, user.UserName))
         {
@@ -223,88 +238,56 @@ public sealed class UserController : ControllerBase
     /// <summary>
     /// 
     /// </summary>
-    /// <param name="queryParam"></param>
-    /// <returns></returns>
-    [HttpGet("Get={queryParam}")]
-    public async Task<ActionResult<PamUser>> GetUser(string queryParam)
-    {
-        if (long.TryParse(queryParam, out long userId))
-        {
-            var usernameExists = await _dbDriver.Service.Users.ExistsAsync(userId);
-
-            if (!usernameExists)
-            {
-                return NotFound("A user with this user id does not exist.");
-            }
-            
-            await ValidateUserAccess(userId);
-            var user = await _dbDriver.Service.Users.GetAsync(userId);
-            
-            if (user == null)
-            {
-                return StatusCode(503, "Internal server error while attempting to get the user via their username");
-            }
-
-            return Ok(JsonConvert.SerializeObject(user));
-        }
-        else
-        {
-            
-            var usernameExists = await _dbDriver.Service.Users.ExistsUsernameAsync(queryParam);
-            if (!usernameExists)
-            {
-                return NotFound("A user with this username does not exist.");
-            }
-            
-            await ValidateUserAccess(queryParam);
-            var user = _dbDriver.Service.Users.GetAsync(queryParam);
-
-            if (user == null)
-            {
-                return StatusCode(503, "Internal server error while attempting to get the user via their username");
-            }
-
-            return Ok(JsonConvert.SerializeObject(user));
-        }
-    }
-    
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="queryParam"></param>
     /// <returns></returns>
     [HttpPost("Update")]
     public async Task<ActionResult<PamUser>> UpdateUser()
     {
-        
         var token = Request.Headers["authorization"];
-        var requestingUserId = JwtTokenGenerator.GetUserKey(token);
         
-        if (!await ValidateUserAccess(requestingUserId))
+        if (JwtTokenGenerator.IsApplicationToken(token))
         {
-            return Unauthorized("The user you are trying to access our server with is no longer authorized to use our services." +
-                                "This might be because the user was deleted, or because the user was locked for malicious use.");
+            return Unauthorized("Invalid Token type");
         }
 
-        PamUser user = await GetRequestingPamUserAsync();
-        PamUser requestingUser = new PamUser();
-        if (!await IsPamStaff(requestingUserId))
+        var userId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (userId < 1 || !await ValidateUserAccess(userId))
         {
-             requestingUser = (PamUser) await _dbDriver.Service.Users.GetAsync(requestingUserId);
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
 
-             if (user.Id != requestingUserId)
+        PamUser user = await GetRequestBodyPamUserAsync();
+        PamUser requestingUser;
+        if (!await IsPamStaff(userId))
+        {
+            requestingUser = (PamUser) await _dbDriver.Service.Users.GetAsync(userId);
+            user.Flags = UserFlags.None;
+            
+             if (user.Id != userId)
              {
                  return Unauthorized("You are not allowed to change any users besides yourself.");
              }
         }
         else
         {
-            requestingUser = await GetRequestingPamUserAsync();
+            requestingUser = await GetRequestBodyPamUserAsync();
+        }
+
+        if (requestingUser == null)
+        {
+            return NotFound("The requesting user could not be found.");
         }
 
         if (user == null)
         {
-            return BadRequest("The requested user could not be found.");
+            return NotFound("The requested user could not be found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(user.FirstName) || 
+            string.IsNullOrWhiteSpace(user.LastName) ||
+            user.Id < 0)
+        {
+            return BadRequest("The user object is not valid.");
         }
 
         var couldUpdate = await _dbDriver.Service.Users.UpdateAsync(user);
@@ -314,20 +297,29 @@ public sealed class UserController : ControllerBase
             return StatusCode(503);
         }
 
-        if (user.Email != requestingUser.Email)
+        if (user.Email != requestingUser.Email && !requestingUser.Flags.HasFlag(UserFlags.PamaxieStaff))
         {
-            if (!await SendConfirmationEmailAsync(requestingUserId, user.Email, user.UserName))
+            if (!await SendConfirmationEmailAsync(userId, user.Email, user.UserName))
             {
                 return StatusCode(500, "An error occured while trying to sent the activation email. Please reach out to support.");
             }
         }
 
-        if (await SendChangeEmailAsync(requestingUser.Email, user.UserName))
+        if (userId != user.Id)
+        {
+            if (!await SendChangeEmailAsync(user.Email, user.UserName))
+            {
+                return StatusCode(500,
+                    "An error occured while trying to sent the change information email. Please contact your system administrator.");
+            }
+        }
+        
+        if (!await SendChangeEmailAsync(requestingUser.Email, user.UserName))
         {
             return StatusCode(500,
                 "An error occured while trying to sent the change information email. Please contact your system administrator.");
         }
-        
+            
         return Ok("The user was successfully changed and a notification was sent to their email.");
     }
     
@@ -336,33 +328,113 @@ public sealed class UserController : ControllerBase
     /// </summary>
     /// <param name="queryParam"></param>
     /// <returns></returns>
-    [HttpDelete("Delete={userId}")]
-    public async Task<ActionResult<PamUser>> UpdateUser(long userId)
+    [HttpGet("Get={queryParam}")]
+    public async Task<ActionResult<PamUser>> GetUser(string queryParam)
     {
-        if (userId == 0)
+        var token = Request.Headers["authorization"];
+        
+        if (JwtTokenGenerator.IsApplicationToken(token))
         {
-            return BadRequest("The user Id is invalid.");
+            return Unauthorized("Invalid Token type");
         }
 
+        var requestingUserId = JwtTokenGenerator.GetOwnerKey(token);
         
-
-        var token = Request.Headers["authorization"];
-        var requestingUserId = JwtTokenGenerator.GetUserKey(token);
-        
-        if (!await ValidateUserAccess(requestingUserId))
+        if (requestingUserId < 1 || !await ValidateUserAccess(requestingUserId))
         {
-            return Unauthorized("The user you are trying to access our server with is no longer authorized to use our services." +
-                                "This might be because the user was deleted, or because the user was locked for malicious use.");
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
+        
+        if (long.TryParse(queryParam, out long userId))
+        {
+            if (!await IsPamStaff(requestingUserId))
+            {
+                if (userId != requestingUserId)
+                {
+                    return Unauthorized("You are not allowed to get any users besides yourself.");
+                }
+            }
+            
+            var userIdExists = await _dbDriver.Service.Users.ExistsAsync(userId);
+
+            if (!userIdExists)
+            {
+                return NotFound("A user with this user id does not exist.");
+            }
+
+            var user = (IPamUser) await _dbDriver.Service.Users.GetAsync(userId);
+            
+            if (user == null)
+            {
+                return StatusCode(503, "Internal server error while attempting to get the user via their username");
+            }
+            
+            user.PasswordHash = string.Empty;
+            return Ok(JsonConvert.SerializeObject(user));
+        }
+        else
+        {
+            if (!await ValidateUserAccess(requestingUserId))
+            {
+                return Unauthorized("You are not allowed to access our servers at the moment. This might be due to your" +
+                                    "account being locked.");
+            }
+            
+            var user = await _dbDriver.Service.Users.GetAsync(queryParam);
+
+            if (!await IsPamStaff(requestingUserId))
+            {
+                if (userId != requestingUserId)
+                {
+                    return Unauthorized("You are not allowed to get any users besides yourself.");
+                }
+            }
+
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            user.PasswordHash = string.Empty;
+            return Ok(JsonConvert.SerializeObject(user));
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="userId"></param>
+    /// <returns></returns>
+    [HttpDelete("Delete={userId}")]
+    public async Task<ActionResult<PamUser>> DeleteUser(long userId)
+    {
+        var token = Request.Headers["authorization"];
+        
+        if (JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
+
+        var requestingUserId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (requestingUserId < 1 || !await ValidateUserAccess(requestingUserId))
+        {
+            return Unauthorized("The user is not authorized to access our system any longer");
         }
         
         if (!await IsPamStaff(requestingUserId))
         {
-            if (userId!= requestingUserId)
+            if (userId != requestingUserId)
             {
-                return Unauthorized("You are not allowed to change any users besides yourself.");
+                return Unauthorized("You are not allowed to delete any users besides yourself.");
             }
         }
-
+        
+        if (userId < 1)
+        {
+            return BadRequest("The user Id is invalid.");
+        }
+        
         if (!await _dbDriver.Service.Users.ExistsAsync(userId))
         {
             return NotFound("The specified user does not exist.");
@@ -380,8 +452,213 @@ public sealed class UserController : ControllerBase
         await SendChangeEmailAsync(toBeDeletedUser.Email, toBeDeletedUser.UserName, true);
         return Ok("The user was successfully deleted from our Database.");
     }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="queryParam"></param>
+    /// <returns></returns>
+    [HttpGet("GetId={queryParam}")]
+    public async Task<ActionResult<long>> GetId(string queryParam)
+    {
+        var token = Request.Headers["authorization"];
+        
+        if (JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
 
-    private async Task<PamUser> GetRequestingPamUserAsync()
+        var requestingUserId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (requestingUserId < 1 || !await ValidateUserAccess(requestingUserId))
+        {
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
+
+        if (!await IsPamStaff(requestingUserId))
+        {
+            return Unauthorized("You are not allowed to access this API endpoint.");
+        }
+        
+        if (string.IsNullOrWhiteSpace(queryParam))
+        {
+            return BadRequest("The Query parameter may not be empty.");
+        }
+        
+        var isUsername = await _dbDriver.Service.Users.ExistsUsernameAsync(queryParam);
+        var isEmail = await _dbDriver.Service.Users.ExistsEmailAsync(queryParam);
+
+        if (!isEmail && !isUsername)
+        {
+            return NotFound();
+        }
+
+        if (isEmail)
+        {
+            var user = await _dbDriver.Service.Users.GetAsync(queryParam);
+            return user.Id;
+        } else
+        {
+            var user = await _dbDriver.Service.Users.GetViaMailAsync(queryParam);
+            return user.Id;
+        }
+    }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="ipAddress"></param>
+    /// <returns></returns>
+    [HttpGet("IsIpKnown={ipAddress}")]
+    public async Task<ActionResult<bool>> IsIpKnown(string ipAddress)
+    {
+        var token = Request.Headers["authorization"];
+        
+        if (JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
+
+        var requestingUserId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (requestingUserId < 1 || !await ValidateUserAccess(requestingUserId))
+        {
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
+
+        return await _dbDriver.Service.Users.IsIpKnownAsync(requestingUserId, ipAddress);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("loadFully")]
+    public async Task<ActionResult<bool>> LoadFully()
+    {
+        var token = Request.Headers["authorization"];
+        
+        if (JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
+
+        var requestingUserId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (requestingUserId < 1 || !await ValidateUserAccess(requestingUserId))
+        {
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
+        
+        var user = await GetRequestBodyPamUserAsync();
+
+        if (user == null)
+        {
+            return BadRequest("Could not read user from body of request");
+        }
+
+        if (!await IsPamStaff(requestingUserId))
+        {
+            if (requestingUserId != user.Id)
+            {
+                return Unauthorized("You are not authorized to load any user fully besides yourself.");
+            }
+        }
+
+        user = (PamUser) await _dbDriver.Service.Users.GetAsync(user.Id);
+        var loadedUser = await _dbDriver.Service.Users.LoadFullyAsync(user);
+
+        user.PasswordHash = null;
+        return Ok(JsonConvert.SerializeObject(loadedUser));
+    }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("loadIps")]
+    public async Task<ActionResult<bool>> LoadIps()
+    {
+        var token = Request.Headers["authorization"];
+        
+        if (JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
+
+        var requestingUserId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (requestingUserId < 1 || !await ValidateUserAccess(requestingUserId))
+        {
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
+        
+        var user = await GetRequestBodyPamUserAsync();
+
+        if (user == null)
+        {
+            return BadRequest("Could not read user from body of request");
+        }
+
+        if (!await IsPamStaff(requestingUserId))
+        {
+            if (requestingUserId != user.Id)
+            {
+                return Unauthorized("You are not authorized to load any user fully besides yourself.");
+            }
+        }
+
+        user = (PamUser) await _dbDriver.Service.Users.GetAsync(user.Id);
+        var loadedUser = await _dbDriver.Service.Users.LoadKnownIpsAsync(user);
+        
+        user.PasswordHash = null;
+        return Ok(JsonConvert.SerializeObject(loadedUser));
+    }
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("loadProjects")]
+    public async Task<ActionResult<bool>> LoadProjects()
+    {
+        var token = Request.Headers["authorization"];
+        
+        if (JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
+
+        var requestingUserId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (requestingUserId < 1 || !await ValidateUserAccess(requestingUserId))
+        {
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
+        
+        var user = await GetRequestBodyPamUserAsync();
+
+        if (user == null)
+        {
+            return BadRequest("Could not read user from body of request");
+        }
+
+        if (!await IsPamStaff(requestingUserId))
+        {
+            if (requestingUserId != user.Id)
+            {
+                return Unauthorized("You are not authorized to load any user fully besides yourself.");
+            }
+        }
+
+        user = (PamUser) await _dbDriver.Service.Users.GetAsync(user.Id);
+        var loadedUser = await _dbDriver.Service.Users.LoadProjectsAsync(user);
+        
+        user.PasswordHash = null;
+        return Ok(JsonConvert.SerializeObject(loadedUser));
+    }
+
+    private async Task<PamUser> GetRequestBodyPamUserAsync()
     {
         using StreamReader reader = new StreamReader(HttpContext.Request.Body);
         var body = await reader.ReadToEndAsync();
@@ -467,6 +744,29 @@ public sealed class UserController : ControllerBase
 
         return true;
     }
+    
+    internal static Task<bool> ValidateUserAccess(IPamUser user)
+    {
+        if (user == null)
+        {
+            return Task.FromResult(false);
+        }
+
+        if (!user.Flags.HasFlag(UserFlags.HasClosedAccess))
+        {
+            return Task.FromResult(false);
+        }
+        else if (!user.Flags.HasFlag(UserFlags.ConfirmedAccount))
+        {
+            return Task.FromResult(false);
+        }
+        else if (user.Flags.HasFlag(UserFlags.Locked))
+        {
+            return Task.FromResult(false);
+        }
+
+        return Task.FromResult(true);
+    }
 
     private async Task<bool> IsPamStaff(long userId)
     {
@@ -477,35 +777,6 @@ public sealed class UserController : ControllerBase
         }
 
         return false;
-    }
-
-    private async Task<bool> ValidateUserAccess(IPamUser user)
-    {
-        if (user == null)
-        {
-            return false;
-        }
-        
-        if (!user.Flags.HasFlag(UserFlags.HasClosedAccess))
-        {
-            return false;
-        }
-        else if (!user.Flags.HasFlag(UserFlags.ConfirmedAccount))
-        {
-            return false;
-        }
-        else if (user.Flags.HasFlag(UserFlags.Locked))
-        {
-            return false;
-        }
-
-        return true;
-    }
-    
-    private async Task<bool> ValidateUserAccess(string username)
-    {
-        var dbObj = await _dbDriver.Service.Users.GetAsync(username);
-        return await ValidateUserAccess(dbObj);
     }
     
     private async Task<bool> ValidateUserAccess(long userId)

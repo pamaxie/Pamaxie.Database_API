@@ -47,54 +47,6 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         public Task<bool> ValidateTokenAsync(string token);
 
         /// <summary>
-        /// Checks if a user has certain project permissions
-        /// </summary>
-        /// <param name="permissions"><see>
-        ///         <cref>PamProjectPermissions</cref>
-        ///     </see>
-        ///     flags enum which permissions should be validated</param>
-        /// <param name="username">username of the user which permissions should be validated</param>
-        /// <param name="project">project that the permissions should be validated against</param>
-        /// <returns></returns>
-        public Task<bool> HasPermissionAsync(IPamProject project, ProjectPermissions permissions, string username);
-
-        /// <summary>
-        /// Checks if a user has certain project permissions
-        /// </summary>
-        /// <param name="permissions"><see>
-        ///         <cref>PamProjectPermissions</cref>
-        ///     </see>
-        ///     flags enum which permissions should be validated</param>
-        /// <param name="userId">Id of the user which permissions should be validated</param>
-        /// <param name="projectId">project id that the permissions should be validated against</param>
-        /// <returns></returns>
-        public Task<bool> HasPermissionAsync(long projectId, ProjectPermissions permissions, long userId);
-
-        /// <summary>
-        /// Checks if a user has certain project permissions
-        /// </summary>
-        /// <param name="permissions"><see>
-        ///         <cref>PamProjectPermissions</cref>
-        ///     </see>
-        ///     flags enum which permissions should be validated</param>
-        /// <param name="userId">Id of the user which permissions should be validated</param>
-        /// <param name="project">project that the permissions should be validated against</param>
-        /// <returns></returns>
-        public Task<bool> HasPermissionAsync(IPamProject project, ProjectPermissions permissions, long userId);
-
-        /// <summary>
-        /// Checks if a user has certain project permissions
-        /// </summary>
-        /// <param name="permissions"><see>
-        ///         <cref>PamProjectPermissions</cref>
-        ///     </see>
-        ///     flags enum which permissions should be validated</param>
-        /// <param name="username">username of the user which permissions should be validated</param>
-        /// <param name="projectId">project id that the permissions should be validated against</param>
-        /// <returns></returns>
-        public Task<bool> HasPermissionAsync(long projectId, ProjectPermissions permissions, string username);
-
-        /// <summary>
         /// Removes a Api Token to a project
         /// </summary>
         /// <param name="projectId">Id of the project to create a token for</param>
@@ -119,6 +71,19 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         public Task<bool> SetPermissionsAsync(long projectId, long userId, ProjectPermissions newPermissions);
 
         /// <summary>
+        /// Checks if a user has certain project permissions
+        /// </summary>
+        /// <param name="permissions"><see>
+        ///         <cref>PamProjectPermissions</cref>
+        ///     </see>
+        ///     flags enum which permissions should be validated</param>
+        /// <param name="userId">Id of the user which permissions should be validated</param>
+        /// <param name="projectId">project id that the permissions should be validated against</param>
+        /// <returns></returns>
+        public Task<bool> HasPermissionAsync(long projectId, long userId, ProjectPermissions permissions);
+        
+
+        /// <summary>
         /// Adds a user to a project
         /// </summary>
         /// <param name="projectId">Id of the project to add the user to</param>
@@ -134,5 +99,13 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         ///  <param name="userId">Id of the user that should be removed from the project</param>
         ///  <returns></returns>
         public Task<bool> RemoveUserAsync(long projectId, long userId);
+
+        /// <summary>
+        /// Checks if the user is the owner of the project
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="projectId"></param>
+        /// <returns></returns>
+        public Task<bool> IsOwnerAsync(long userId, long projectId);
     }
 }

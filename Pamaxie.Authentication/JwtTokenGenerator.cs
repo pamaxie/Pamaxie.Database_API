@@ -25,9 +25,9 @@ namespace Pamaxie.Authentication
         /// <summary>
         /// Creates a token object through JWT encoding
         /// </summary>
-        /// <param name="userId">User id of the user that will be contained in the token</param>
+        /// <param name="ownerId">Id of the item that owns this Token (User or Project for example)</param>
         /// <returns>A authentication token object</returns>
-        public JwtToken CreateToken(long userId, JwtTokenConfig authTokenSettings = null, bool IsApplicationToken = false, bool longLivedToken = false)
+        public JwtToken CreateToken(long ownerId, JwtTokenConfig authTokenSettings = null, bool IsApplicationToken = false, bool longLivedToken = false)
         {
 
             JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
@@ -50,7 +50,7 @@ namespace Pamaxie.Authentication
             }
 
             var token = new JwtSecurityToken("Pamaxie", "Pamaxie", null, DateTime.Now.ToUniversalTime(), expires, new SigningCredentials(new SymmetricSecurityKey(key),SecurityAlgorithms.HmacSha256Signature));
-            token.Payload["userId"] = userId;
+            token.Payload["ownerId"] = ownerId;
             token.Payload["applicationToken"] = IsApplicationToken;
             var handler = new JwtSecurityTokenHandler();
             var jwt = handler.WriteToken(token);
@@ -62,9 +62,10 @@ namespace Pamaxie.Authentication
         /// </summary>
         /// <param name="authToken"></param>
         /// <returns></returns>
-        public static long GetUserKey(string authToken)
+        public static long GetOwnerKey(string authToken)
         {
             var jwtToken = new JwtSecurityToken(authToken.Replace("Bearer ", string.Empty));
+
             if (long.TryParse(jwtToken.Claims.FirstOrDefault(x => x.Type == "userId")?.Value, out var userId))
             {
                 return userId;

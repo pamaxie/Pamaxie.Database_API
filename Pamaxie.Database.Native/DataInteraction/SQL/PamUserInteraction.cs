@@ -24,12 +24,13 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         {
             return null;
         }
-        
-        
+
+        //Making sure the password hash isn't there.
+        user.PasswordHash = string.Empty;
         return user.ToUserLogic();
     }
     
-    public override async Task<bool> CreateAsync(IPamSqlObject data)
+    public override async Task<(bool, long)> CreateAsync(IPamSqlObject data)
     {
         if (data is IPamUser pamUser)
         {
@@ -42,19 +43,70 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
 
     public override async Task<bool> UpdateAsync(IPamSqlObject data)
     {
+        await using var context = new PgSqlContext();
+        
         if (data is IPamUser pamUser)
         {
-            return await base.UpdateAsync(pamUser.ToBusinessLogic());
+            var user = pamUser.ToBusinessLogic();
+
+            await VerifyUserBeforeUpdate(user);
+
+
+            return await base.UpdateAsync(user);
         }
         
+        await VerifyUserBeforeUpdate((User)data);
         return await base.UpdateAsync(data);
+    }
+
+    private async Task<User> VerifyUserBeforeUpdate(User user)
+    {
+        await using var context = new PgSqlContext();
+        
+        if (string.IsNullOrWhiteSpace(user.PasswordHash))
+        {
+            user.PasswordHash = context.Users.FirstOrDefault(x => x.Id == user.Id)?.PasswordHash;
+        }
+            
+        if (string.IsNullOrWhiteSpace(user.Email))
+        {
+            user.Email = context.Users.FirstOrDefault(x => x.Id == user.Id)?.Email;
+        }
+
+        if (user.CreationDate == DateTime.MinValue)
+        {
+            user.CreationDate = context.Users.FirstOrDefault(x => x.Id == user.Id)?.CreationDate ?? DateTime.Now;
+        }
+
+        //Making sure flags are loaded if they haven't been changed by staff
+        if (user.Flags == UserFlags.None)
+        {
+            user.Flags = context.Users.FirstOrDefault(x => x.Id == user.Id)?.Flags ?? UserFlags.None;
+        }
+
+        return user;
     }
 
     public override async Task<bool> DeleteAsync(IPamSqlObject data)
     {
         if (data is IPamUser user)
         {
-            return await base.DeleteAsync(user.ToBusinessLogic());
+            await using var context = new PgSqlContext();
+            var projectUsers = context.ProjectUsers.Where(x => x.Id == user.Id);
+            var ownedProjects = context.Projects.Where(x => x.OwnerId == user.Id);
+            var knownIps = context.KnownUserIps.Where(x => x.UserId == user.Id);
+            var emailConfirmations = context.EmailConfirmations.Where(x => x.UserId == user.Id);
+            context.RemoveRange(projectUsers);
+            context.RemoveRange(ownedProjects);
+            context.RemoveRange(knownIps);
+            context.RemoveRange(emailConfirmations);
+            
+            if (await base.DeleteAsync(user.ToBusinessLogic()))
+            {
+                //Only apply the changes if the user deletion was successful.
+                await context.SaveChangesAsync();
+                return true;
+            }
         }
         
         return await base.DeleteAsync(data);
@@ -70,6 +122,18 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
 
         await using var context = new PgSqlContext();
         return context.Users.FirstOrDefault(x => x.Username == username)?.ToUserLogic();
+    }
+    
+    /// <inheritdoc cref="GetViaMailAsync(string)"/>
+    public async Task<IPamUser> GetViaMailAsync(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            throw new ArgumentNullException(nameof(email));
+        }
+
+        await using var context = new PgSqlContext();
+        return context.Users.FirstOrDefault(x => x.Email == email)?.ToUserLogic();
     }
 
     ///<inheritdoc cref="ExistsUsernameAsync"/>
@@ -102,6 +166,11 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         if (user == null)
         {
             throw new ArgumentNullException(nameof(user));
+        }
+
+        if (user.Id < 1)
+        {
+            throw new ArgumentException("Invalid user id", nameof(user.Id));
         }
         
         await LoadProjectsAsync(user);
@@ -154,11 +223,11 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
     }
     
     /// <inheritdoc cref="IPamUserInteraction.GetProjectPermissionsAsync(string,Pamaxie.Data.IPamUser)"/>
-    public async Task<ProjectPermissions> GetProjectPermissionsAsync(string projectName, IPamUser user)
+    public async Task<ProjectPermissions> GetProjectPermissionsAsync(string projectName, long userId)
     {
-        if (user == null)
+        if (userId < 1)
         {
-            throw new ArgumentNullException(nameof(user));
+            throw new ArgumentException("Invalid User Id",nameof(userId));
         }
         
         if (string.IsNullOrWhiteSpace(projectName))
@@ -168,16 +237,16 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
 
         await using var context = new PgSqlContext();
         var project = context.Projects.FirstOrDefault(x => x.Name == projectName);
-        var projectUser = context.ProjectUsers.FirstOrDefault(x => x.ProjectId == project.Id && x.UserId == user.Id);
+        var projectUser = context.ProjectUsers.FirstOrDefault(x => x.ProjectId == project.Id && x.UserId == userId);
         return projectUser?.Permissions ?? ProjectPermissions.None;
     }
     
     /// <inheritdoc cref="IPamUserInteraction.GetProjectPermissionsAsync(long,Pamaxie.Data.IPamUser)"/>
-    public async Task<ProjectPermissions> GetProjectPermissionsAsync(long projectId, IPamUser user) 
+    public async Task<ProjectPermissions> GetProjectPermissionsAsync(long projectId, long userId) 
     {
-        if (user == null)
+        if (userId < 0)
         {
-            throw new ArgumentNullException(nameof(user));
+            throw new ArgumentException("Invalid User Id",nameof(userId));
         }
         
         if (projectId == 0)
@@ -186,29 +255,10 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         }
 
         await using var context = new PgSqlContext();
-        var projectUser = context.ProjectUsers.FirstOrDefault(x => x.ProjectId == projectId && x.UserId == user.Id);
+        var projectUser = context.ProjectUsers.FirstOrDefault(x => x.ProjectId == projectId && x.UserId == userId);
         return projectUser?.Permissions ?? ProjectPermissions.None;
     }
-    
-    /*/// <inheritdoc cref="LoadTwoFactorOptionsAsync"/>
-    public async Task<IPamUser> LoadTwoFactorOptionsAsync(IPamUser user)
-    {   
-        if (user == null)
-        {
-            throw new ArgumentNullException(nameof(user));
-        }
 
-        await using var context = new PgSqlContext();
-        var twoFactorOptions = context.TwoFactorUsers.Where(x => x.UserId == user.Id);
-        
-        foreach (var twoFactorOption in twoFactorOptions)
-        {
-            user.TwoFactorOptions.Add((twoFactorOption.Type));
-        }
-
-        return user;
-    }*/
-    
     /// <inheritdoc cref="LoadKnownIpsAsync"/>
     public async Task<IPamUser> LoadKnownIpsAsync(IPamUser user)
     {
@@ -228,10 +278,10 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
     }
     
     /// <inheritdoc cref="IsIpKnownAsync"/>
-    public async Task<bool> IsIpKnownAsync(IPamUser user, string ipAddress)
+    public async Task<bool> IsIpKnownAsync(long userId, string ipAddress)
     {
         await using var context = new PgSqlContext();
-        return context.KnownUserIps.Any(x => x.UserId == user.Id && x.IpAddress == ipAddress);
+        return context.KnownUserIps.Any(x => x.UserId == userId && x.IpAddress == ipAddress);
     }
 
     /// <inheritdoc cref="GetUniqueKeyAsync"/>

@@ -15,7 +15,8 @@ public static class UserExtensions
             UserName = user.Username,
             LastName = user.LastName,
             FirstName = user.FirstName,
-            PasswordHash = user.PasswordHash,
+            //Forbid from transacting password hash
+            //PasswordHash = user.PasswordHash,
             //TwoFactorOptions = new LazyList<(TwoFactorType Type, string Secret)>(){IsLoaded = false},
             KnownIps = new LazyList<string>(){IsLoaded = false},
             Projects = new LazyList<(IPamProject Project, long ProjectId)>(){IsLoaded = false},
@@ -39,7 +40,8 @@ public static class UserExtensions
             PasswordHash = user.PasswordHash,
             Flags = user.Flags,
             TTL = user.TTL,
-            CreationDate = user.CreationDate
+            //Forbid changing Creation Date
+            //CreationDate = user.CreationDate
         };
 
         pamUser.Id = user.Id;

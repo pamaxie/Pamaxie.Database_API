@@ -15,6 +15,13 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <param name="username">username of the user</param>
         /// <returns></returns>
         public Task<IPamUser> GetAsync(string username);
+        
+        /// <summary>
+        /// Gets a user via their username
+        /// </summary>
+        /// <param name="email">email of the user</param>
+        /// <returns></returns>
+        public Task<IPamUser> GetViaMailAsync(string email);
 
         /// <summary>
         /// Does the username exist in our database
@@ -50,12 +57,12 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// for the project with the reached in <see cref="projectName"/>
         /// </summary>
         /// <param name="projectName">Name of the project</param>
-        /// <param name="user">User to get the permissions of</param>
+        /// <param name="userIdUser to get the permissions of</param>
         /// <returns><see>
         ///         <cref>PamProjectPermissions</cref>
         ///     </see>
         ///     of the user</returns>
-        public Task<ProjectPermissions> GetProjectPermissionsAsync(string projectName, IPamUser user);
+        public Task<ProjectPermissions> GetProjectPermissionsAsync(string projectName, long userId);
 
         /// <summary>
         /// Gets the <see cref="user"/> <see>
@@ -64,12 +71,12 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// for the project with the reached in <see cref="projectId"/>
         /// </summary>
         /// <param name="projectId">Id of the Project</param>
-        /// <param name="user">User to get the permissions of</param>
+        /// <param name="userIdUser to get the permissions of</param>
         /// <returns><see>
         ///         <cref>PamProjectPermissions</cref>
         ///     </see>
         ///     of the user</returns>
-        public Task<ProjectPermissions> GetProjectPermissionsAsync(long projectId, IPamUser user);
+        public Task<ProjectPermissions> GetProjectPermissionsAsync(long projectId, long userId);
 
         // /// <summary>
         // /// Loads the <see>
@@ -92,9 +99,9 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <summary>
         /// Checks if the Ip Address for the user is known
         /// </summary>
-        /// <param name="user">User to check the IP address for</param>
+        /// <param name="userId">UserId to check the IP address for</param>
         /// <param name="ipAddress">Ip address to check for</param>
-        public Task<bool> IsIpKnownAsync(IPamUser user, string ipAddress);
+        public Task<bool> IsIpKnownAsync(long userId, string ipAddress);
         
 
         /// <summary>

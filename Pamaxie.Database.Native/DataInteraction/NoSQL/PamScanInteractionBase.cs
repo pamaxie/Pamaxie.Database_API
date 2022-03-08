@@ -33,7 +33,28 @@ public class PamScanInteractionBase : PamNoSqlInteractionBase, IPamScanInteracti
         //Unknown scan result so data isn't really interesting for us
         return item;
     }
-    
+
+    public override async Task<(bool, string)> CreateAsync(IPamNoSqlObject data)
+    {
+        if (data is PamScanData<ImageScanResult> scanData)
+        {
+            var scan = scanData.ToBusinessLogic(out var userDataScanResult);
+            
+            if (userDataScanResult is not ImageScanResult imageScanResult)
+            {
+                return await base.CreateAsync(data);
+            }
+
+            var creationResult = await base.UpdateAsync(data) && await base.UpdateAsync(imageScanResult);
+            return (creationResult, scan.Key);
+        }
+        else
+        {
+            return await base.CreateAsync(data);
+        }
+        
+    }
+
     public override async Task<bool> UpdateAsync(IPamNoSqlObject data)
     {
         if (data is PamScanData<ImageScanResult> scanData)

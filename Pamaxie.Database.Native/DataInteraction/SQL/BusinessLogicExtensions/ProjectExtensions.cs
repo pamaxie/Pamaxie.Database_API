@@ -32,7 +32,8 @@ public static class ProjectExtensions
         {
             Name = pamProject.Name,
             Flags = ProjectFlags.None,
-            CreationDate = pamProject.CreationDate,
+            //Forbid from changing creation date
+            //CreationDate = pamProject.CreationDate,
             LastModified = pamProject.LastModifiedAt,
             LastModifiedUserId = pamProject.LastModifiedUser?.Data.UserId ?? 0,
             OwnerId = pamProject.Owner?.Data.UserId ?? 0,

@@ -43,9 +43,9 @@ public class PamNoSqlInteractionBase : IPamInteractionBase<IPamNoSqlObject, stri
         return string.IsNullOrWhiteSpace(noSqlObj) ? null : JsonConvert.DeserializeObject<IPamNoSqlObject>(noSqlObj);
     }
 
-    public virtual async Task<bool> CreateAsync(IPamNoSqlObject data)
+    public virtual async Task<(bool, string)> CreateAsync(IPamNoSqlObject data)
     {
-        return await this.UpdateAsync(data);
+        return (await this.UpdateAsync(data), data.Key);
     }
 
     public virtual async Task<bool> UpdateAsync(IPamNoSqlObject data)
