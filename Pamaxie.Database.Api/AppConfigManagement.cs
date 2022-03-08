@@ -31,12 +31,19 @@ public class AppConfigManagement
     private const string DbSettingsNode = "DbSettings";
     private const string JwtSettingsNode = "JwtSettings";
 
-    public static Uri HostUrl = new Uri("https://api.pamaxie.com/");
+    /// <summary>
+    /// Url that the server uses for connections externally. This is important for links that are put into emails
+    /// </summary>
+    public static Uri HostUrl { get; private set; } = new Uri("https://api.pamaxie.com/");
     
+    /// <summary>
+    /// Environment Variable that stores the Sendgrid token
+    /// </summary>
     public const string SendGridVar = DockerEnvVars.SendGridEnvVar;
-    public const string HostUrlVar = DockerEnvVars.HostUrl;
-        
-    private static readonly string SettingsFileName = "PamSettings.json";
+    
+
+    private const string HostUrlVar = DockerEnvVars.HostUrl;
+    private const string SettingsFileName = "PamSettings.json";
 
     /// <summary>
     /// Holds the Database settings
@@ -570,7 +577,7 @@ public class AppConfigManagement
         }
             
         var ruler = new Rule("[yellow]Database Configuration[/]") {Alignment = Justify.Left};
-        AnsiConsole.Render(ruler);
+        AnsiConsole.Write(ruler);
         var drivers = DbDriverManager.LoadDatabaseDrivers();
         IPamaxieDatabaseDriver driver;
             

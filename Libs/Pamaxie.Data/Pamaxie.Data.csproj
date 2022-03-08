@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <RepositoryUrl>https://github.com/pamaxie/Pamaxie.Data</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <EnforceCodeStyleInBuild>False</EnforceCodeStyleInBuild>
+        <Description>Data structure for Pamaxies software</Description>
+        <Copyright>Apache 2 License</Copyright>
+        <PackageProjectUrl>https://github.com/pamaxie/Pamaxie.Data</PackageProjectUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <Company>Pamaxie</Company>
+        <Authors>Pamaxie Dev Team</Authors>
+        <Version>6.3.19</Version>
+        <PackageVersion>6.3.19</PackageVersion>
+        <IsPackable>false</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Remove="Data\Urls\**" />
+      <EmbeddedResource Remove="Data\Urls\**" />
+      <None Remove="Data\Urls\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    </ItemGroup>
+
+</Project>

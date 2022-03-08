@@ -73,40 +73,47 @@ public class ProjectController : ControllerBase
             return BadRequest("Malformed request body.");
         }
 
-        if (!user.Flags.HasFlag(UserFlags.PamaxieStaff))
+        if (string.IsNullOrWhiteSpace(project.Name))
         {
-            if (!await _dbDriver.Service.Projects.HasPermissionAsync(project.Id, requestingUserId,
-                    ProjectPermissions.Read))
-            {
-                return Unauthorized("You are not allowed to access this project");
-            }
+            return BadRequest("Please enter a project name");
         }
 
         project.Id = 0;
         project.Users = null;
-        project.Owner = new LazyObject<(IPamUser User, long UserId)>
+        project.Owner = new LazyObject<(PamUser User, long UserId)>
         {
             Data = (user, requestingUserId),
             IsLoaded = true
         };
 
-        project.LastModifiedUser = new LazyObject<(IPamUser User, long UserId)>
+        project.LastModifiedUser = new LazyObject<(PamUser User, long UserId)>
         {
             Data = (user, requestingUserId),
             IsLoaded = true
         };
 
         project.LastModifiedAt = DateTime.Now;
+        project.CreationDate = DateTime.Now;
         project.Flags = ProjectFlags.None;
 
-        var creationResult = await _dbDriver.Service.Projects.CreateAsync(project);
-        
-        if (!creationResult.wasCreated)
+        var (wasCreated, createdId) = await _dbDriver.Service.Projects.CreateAsync(project);
+
+        if (!wasCreated)
         {
             return StatusCode(503, "Hit unexpected error while trying to modify this project");
         }
 
-        return Created("", creationResult.createdId);
+        var couldAddOwner = await _dbDriver.Service.Projects.AddUserAsync(
+            createdId, 
+            requestingUserId, 
+            ProjectPermissions.Administrator);
+
+        if (!couldAddOwner)
+        {
+            return StatusCode(503, "Could not add the owner to the project. Please contact support");
+        }
+        
+        return Created("", createdId);
     }
 
     /// <summary>
@@ -149,9 +156,15 @@ public class ProjectController : ControllerBase
             return BadRequest("Malformed request body.");
         }
 
+        if (string.IsNullOrWhiteSpace(project.Name) || project.Owner.Data.UserId < 1 || project.Id < 1)
+        {
+            return BadRequest(
+                "The reached in data is not valid. Please make sure the owner, name and Id contain a value");
+        }
+
         if (!await _dbDriver.Service.Projects.ExistsAsync(project.Id))
         {
-            NotFound("The specified project with that Id does not exist in our Database");
+            return NotFound("The specified project with that Id does not exist in our Database");
         }
 
         if (!user.Flags.HasFlag(UserFlags.PamaxieStaff))
@@ -172,7 +185,7 @@ public class ProjectController : ControllerBase
         }
 
         project.LastModifiedAt = DateTime.Now;
-        project.LastModifiedUser = new LazyObject<(IPamUser User, long UserId)>
+        project.LastModifiedUser = new LazyObject<(PamUser User, long UserId)>
         {
             Data = (user, requestingUserId),
             IsLoaded = true
@@ -234,7 +247,7 @@ public class ProjectController : ControllerBase
             return NotFound("The specified project does not exist.");
         }
 
-        var project = _dbDriver.Service.Projects.GetAsync(projectId);
+        var project = await _dbDriver.Service.Projects.GetAsync(projectId);
         return Ok(JsonConvert.SerializeObject(project));
     }
 
@@ -290,9 +303,7 @@ public class ProjectController : ControllerBase
             return NotFound("The specified project does not exist.");
         }
 
-        var toBeDeletedProject = await _dbDriver.Service.Projects.GetAsync(projectId);
-
-        var deletedProject = await _dbDriver.Service.Users.DeleteAsync(toBeDeletedProject);
+        var deletedProject = await _dbDriver.Service.Projects.DeleteAsync(projectId);
 
         if (!deletedProject)
         {
@@ -307,7 +318,7 @@ public class ProjectController : ControllerBase
     /// Checks if a user has the permissions to a projec
     /// </summary>
     /// <returns></returns>
-    [HttpGet("hasPermission")]
+    [HttpPost("hasPermission")]
     public async Task<ActionResult<bool>> HasPermission()
     {
         var token = Request.Headers["authorization"];
@@ -344,17 +355,17 @@ public class ProjectController : ControllerBase
         try
         {
             JObject jObject = JObject.Parse(body);
-            var jsonDbSettings = jObject.SelectToken("UserId");
-            var jsonJwtSettings = jObject.SelectToken("ProjectId");
+            var jsonUser = jObject.SelectToken("UserId");
+            var jsonProject = jObject.SelectToken("ProjectId");
             var jsonPermissions = jObject.SelectToken("Permissions");
 
-            if (jsonDbSettings == null || jsonJwtSettings == null || jsonPermissions == null)
+            if (jsonUser == null || jsonProject == null || jsonPermissions == null)
             {
                 return BadRequest("Invalid or malformed Body data.");
             }
 
-            userId = jsonDbSettings.ToObject<long>();
-            projectId = jsonJwtSettings.ToObject<long>();
+            userId = jsonUser.ToObject<long>();
+            projectId = jsonProject.ToObject<long>();
             permissions = jsonPermissions.ToObject<ProjectPermissions>();
         }
         catch (JsonException)
@@ -373,16 +384,16 @@ public class ProjectController : ControllerBase
             return NotFound("Specified project does not exist.");
         }
 
-        if (user.Flags.HasFlag(UserFlags.PamaxieStaff))
+        if (!user.Flags.HasFlag(UserFlags.PamaxieStaff))
         {
             //User is requesting permissions for not themselves.
             if (userId != requestingUserId)
             {
                 //User is requesting permissions without being an administrator
-                if (!await _dbDriver.Service.Projects.HasPermissionAsync(userId, projectId,
+                if (!await _dbDriver.Service.Projects.HasPermissionAsync(projectId, requestingUserId,
                         ProjectPermissions.Administrator))
                 {
-                    return BadRequest(
+                    return Unauthorized(
                         "You cannot change or request any permissions for any projects where you are not an administrator. " +
                         "(Or for requesting them, where you aren't requesting the permissions for yourself)");
                 }
@@ -390,9 +401,9 @@ public class ProjectController : ControllerBase
         }
         
 
-        if (!await _dbDriver.Service.Projects.HasPermissionAsync(userId, projectId, permissions))
+        if (!await _dbDriver.Service.Projects.HasPermissionAsync(projectId, userId, permissions))
         {
-            return Unauthorized(false);
+            return Ok(false);
         }
 
         return Ok(true);
@@ -402,7 +413,7 @@ public class ProjectController : ControllerBase
     /// Sets the permissions for a user
     /// </summary>
     /// <returns></returns>
-    [HttpGet("setPermissions")]
+    [HttpPost("setPermissions")]
     public async Task<ActionResult<bool>> SetPermissions()
     {
         var token = Request.Headers["authorization"];
@@ -439,17 +450,17 @@ public class ProjectController : ControllerBase
         try
         {
             JObject jObject = JObject.Parse(body);
-            var jsonDbSettings = jObject.SelectToken("UserId");
-            var jsonJwtSettings = jObject.SelectToken("ProjectId");
+            var jsonUser = jObject.SelectToken("UserId");
+            var jsonProject = jObject.SelectToken("ProjectId");
             var jsonPermissions = jObject.SelectToken("Permissions");
 
-            if (jsonDbSettings == null || jsonJwtSettings == null || jsonPermissions == null)
+            if (jsonUser == null || jsonProject == null || jsonPermissions == null)
             {
                 return BadRequest("Invalid or malformed Body data.");
             }
 
-            userId = jsonDbSettings.ToObject<long>();
-            projectId = jsonJwtSettings.ToObject<long>();
+            userId = jsonUser.ToObject<long>();
+            projectId = jsonProject.ToObject<long>();
             permissions = jsonPermissions.ToObject<ProjectPermissions>();
         }
         catch (JsonException)
@@ -468,9 +479,9 @@ public class ProjectController : ControllerBase
             return NotFound("Specified project does not exist.");
         }
 
-        if (user.Flags.HasFlag(UserFlags.PamaxieStaff))
+        if (!user.Flags.HasFlag(UserFlags.PamaxieStaff))
         {
-            if (!await _dbDriver.Service.Projects.HasPermissionAsync(userId, projectId,
+            if (!await _dbDriver.Service.Projects.HasPermissionAsync(projectId, requestingUserId,
                     ProjectPermissions.Administrator))
             {
                 return BadRequest(
@@ -478,9 +489,9 @@ public class ProjectController : ControllerBase
             }
         }
 
-        if (await _dbDriver.Service.Projects.SetPermissionsAsync(userId, projectId, permissions))
+        if (!await _dbDriver.Service.Projects.SetPermissionsAsync(projectId, userId, permissions))
         {
-            return Unauthorized(false);
+            return StatusCode(503, "Error while attempting to change the permissions for the project");
         }
 
         return Ok(true);
@@ -490,7 +501,7 @@ public class ProjectController : ControllerBase
     /// Creates a new API Token
     /// </summary>
     /// <returns></returns>
-    [HttpGet("createToken")]
+    [HttpPost("createToken")]
     public async Task<ActionResult<string>> CreateToken()
     {
         var token = Request.Headers["authorization"];
@@ -527,15 +538,15 @@ public class ProjectController : ControllerBase
         try
         {
             JObject jObject = JObject.Parse(body);
-            var jsonDbSettings = jObject.SelectToken("ProjectId");
+            var projectIdJson = jObject.SelectToken("ProjectId");
             var expiresAtJson = jObject.SelectToken("ExpiresAtUTC");
 
-            if (jsonDbSettings == null || expiresAtJson == null)
+            if (projectIdJson == null || expiresAtJson == null)
             {
                 return BadRequest("Invalid or malformed Body data.");
             }
 
-            projectId = jsonDbSettings.ToObject<long>();
+            projectId = projectIdJson.ToObject<long>();
             expiresAt = expiresAtJson.ToObject<DateTime>();
             expiresAt = expiresAt.ToUniversalTime();
         }
@@ -572,7 +583,7 @@ public class ProjectController : ControllerBase
     /// 
     /// </summary>
     /// <returns></returns>
-    [HttpGet("removeToken")]
+    [HttpDelete("removeToken")]
     public async Task<ActionResult<string>> RemoveToken()
     {
         var token = Request.Headers["authorization"];
@@ -609,16 +620,16 @@ public class ProjectController : ControllerBase
         try
         {
             JObject jObject = JObject.Parse(body);
-            var jsonDbSettings = jObject.SelectToken("ProjectId");
-            var jsonTokenId = jObject.SelectToken("TokenId");
+            var projectIdJson = jObject.SelectToken("ProjectId");
+            var tokenIdJson = jObject.SelectToken("TokenId");
 
-            if (jsonDbSettings == null || jsonTokenId == null)
+            if (projectIdJson == null || tokenIdJson == null)
             {
                 return BadRequest("Invalid or malformed Body data.");
             }
 
-            projectId = jsonDbSettings.ToObject<long>();
-            tokenId = jsonTokenId.ToObject<long>();
+            projectId = projectIdJson.ToObject<long>();
+            tokenId = tokenIdJson.ToObject<long>();
         }
         catch (JsonException)
         {
@@ -658,7 +669,7 @@ public class ProjectController : ControllerBase
     /// 
     /// </summary>
     /// <returns></returns>
-    [HttpGet("addUser")]
+    [HttpPost("addUser")]
     public async Task<ActionResult<string>> AddUser()
     {
         var token = Request.Headers["authorization"];
@@ -733,7 +744,11 @@ public class ProjectController : ControllerBase
                 return Unauthorized("You are not allowed to access this project, or lack the permissions to modify it");
             }
         }
-        
+
+        if (await _dbDriver.Service.Projects.HasUserAsync(projectId, userId))
+        {
+            return Conflict("User is already part of the project");
+        }
 
         if (!await _dbDriver.Service.Projects.AddUserAsync(projectId, userId, permissions))
         {
@@ -747,7 +762,7 @@ public class ProjectController : ControllerBase
     /// 
     /// </summary>
     /// <returns></returns>
-    [HttpGet("RemoveUser")]
+    [HttpPost("RemoveUser")]
     public async Task<ActionResult<string>> RemoveUser()
     {
         var token = Request.Headers["authorization"];
@@ -823,6 +838,16 @@ public class ProjectController : ControllerBase
             }
         }
         
+        if (await _dbDriver.Service.Projects.IsOwnerAsync(projectId, userId))
+        {
+            return BadRequest("The owner of the project cannot be deleted.");
+        }
+        
+        if (!await _dbDriver.Service.Projects.HasUserAsync(projectId, userId))
+        {
+            return NotFound("The user is not part of this project.");
+        }
+
         if (!await _dbDriver.Service.Projects.RemoveUserAsync(projectId, userId))
         {
             return StatusCode(503, "Error while attempting to delete database Object");
@@ -835,7 +860,7 @@ public class ProjectController : ControllerBase
     /// 
     /// </summary>
     /// <returns></returns>
-    [HttpGet("LoadOwner")]
+    [HttpPost("LoadOwner")]
     public async Task<ActionResult<string>> LoadOwner()
     {
         var token = Request.Headers["authorization"];
@@ -892,14 +917,14 @@ public class ProjectController : ControllerBase
             return StatusCode(503, "Error while attempting to delete database Object");
         }
 
-        return Ok();
+        return Ok(JsonConvert.SerializeObject(project));
     }
     
     /// <summary>
     /// 
     /// </summary>
     /// <returns></returns>
-    [HttpGet("LoadLastModifiedUser")]
+    [HttpPost("LoadLastModifiedUser")]
     public async Task<ActionResult<string>> LoadLastModifiedUser()
     {
         var token = Request.Headers["authorization"];
@@ -950,20 +975,20 @@ public class ProjectController : ControllerBase
         }
 
         project = (PamProject) await _dbDriver.Service.Projects.LoadLastModifiedUserAsync(project);
-        
+
         if (project == null)
         {
             return StatusCode(503, "Error while attempting to delete database Object");
         }
-
-        return Ok();
+        
+        return Ok(JsonConvert.SerializeObject(project));
     }
     
     /// <summary>
     /// 
     /// </summary>
     /// <returns></returns>
-    [HttpGet("LoadLastModifiedUser")]
+    [HttpPost("LoadApiTokens")]
     public async Task<ActionResult<string>> LoadApiTokens()
     {
         var token = Request.Headers["authorization"];
@@ -1009,14 +1034,14 @@ public class ProjectController : ControllerBase
             return StatusCode(503, "Error while attempting to delete database Object");
         }
 
-        return Ok();
+        return Ok(JsonConvert.SerializeObject(project));
     }
     
     /// <summary>
     /// 
     /// </summary>
     /// <returns></returns>
-    [HttpGet("LoadUsers")]
+    [HttpPost("LoadUsers")]
     public async Task<ActionResult<string>> LoadUsers()
     {
         var token = Request.Headers["authorization"];
@@ -1062,7 +1087,7 @@ public class ProjectController : ControllerBase
             return StatusCode(503, "Error while attempting to delete database Object");
         }
 
-        return Ok();
+        return Ok(JsonConvert.SerializeObject(project));
     }
     
 

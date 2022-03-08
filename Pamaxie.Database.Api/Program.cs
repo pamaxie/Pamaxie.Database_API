@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Isopoh.Cryptography.Argon2;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -49,7 +50,7 @@ public static class Program
         {
             hostUrl = nameString.Split(',').ToList();
         }
-        
+
         //TODO: Not respecting docker options for now, to reduce complexity. This will be added in the future.
         
         return Host.CreateDefaultBuilder(args)

@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>Pamaxie.Database.Extensions</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Libs\Pamaxie.Data\Pamaxie.Data.csproj" />
+    <ProjectReference Include="..\..\Libs\Pamaxie.Helpers\Pamaxie.Helpers.csproj" />
+  </ItemGroup>
+
+</Project>

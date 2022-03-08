@@ -44,13 +44,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Pamaxie.Authentication\Pamaxie.Authentication.csproj" />
-    <ProjectReference Include="..\Pamaxie.Database.Design\Pamaxie.Database.Design.csproj" />
-    <ProjectReference Include="..\Pamaxie.Database.Native\Pamaxie.Database.Native.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Validation" />
+    <ProjectReference Include="..\Drivers\Pamaxie.Database.Design\Pamaxie.Database.Design.csproj" />
+    <ProjectReference Include="..\Drivers\Pamaxie.Database.Native\Pamaxie.Database.Native.csproj" />
+    <ProjectReference Include="..\Libs\Pamaxie.Authentication\Pamaxie.Authentication.csproj" />
   </ItemGroup>
 
 </Project>

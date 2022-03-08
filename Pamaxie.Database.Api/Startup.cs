@@ -29,8 +29,7 @@ public sealed class Startup
     {
         Configuration = configuration;
     }
-        
-
+    
     private IConfiguration Configuration { get; }
 
     /// <summary>
@@ -83,6 +82,16 @@ public sealed class Startup
 
 
         var dbDriver = DbDriverManager.LoadDatabaseDriver(AppConfigManagement.DbSettings.DatabaseDriverGuid);
+
+        if (dbDriver == null)
+        {
+            AnsiConsole.MarkupLine("[red]Could not find the specified database driver from the configuration file. " +
+                                  "Please ensure it exists. If you want to reconfigure your database to use a new driver, " +
+                                  "please delete your existing config.[/]");
+            
+            Environment.Exit(-1);
+        }
+        
         dbDriver.Configuration.LoadConfig(AppConfigManagement.DbSettings.Settings);
         services.AddSingleton(dbDriver);
         services.AddTransient<JwtTokenGenerator>();

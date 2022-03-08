@@ -5,13 +5,19 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pamaxie.Database.Api", "Pamaxie.Database.Api\Pamaxie.Database.Api.csproj", "{8B23D237-F63F-4668-A76F-5D74567A1673}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pamaxie.Database.Design", "Pamaxie.Database.Design\Pamaxie.Database.Design.csproj", "{B5C5E83C-CBD3-4E37-B93C-F267FA70E71E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pamaxie.Database.Design", "Drivers\Pamaxie.Database.Design\Pamaxie.Database.Design.csproj", "{B5C5E83C-CBD3-4E37-B93C-F267FA70E71E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Drivers", "Drivers", "{1B9E48F3-C9C1-42C4-8219-6C9EC7859B9F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pamaxie.Database.Native", "Pamaxie.Database.Native\Pamaxie.Database.Native.csproj", "{34D0F08C-F9DA-4CAF-9A79-6928688E7D3C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pamaxie.Database.Native", "Drivers\Pamaxie.Database.Native\Pamaxie.Database.Native.csproj", "{34D0F08C-F9DA-4CAF-9A79-6928688E7D3C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pamaxie.Authentication", "Pamaxie.Authentication\Pamaxie.Authentication.csproj", "{5A232FCA-1478-41F3-A09F-05C8EBD910AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pamaxie.Authentication", "Libs\Pamaxie.Authentication\Pamaxie.Authentication.csproj", "{5A232FCA-1478-41F3-A09F-05C8EBD910AC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{9F3112A6-4D00-4510-84E2-B81F44B7AF8E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pamaxie.Data", "Libs\Pamaxie.Data\Pamaxie.Data.csproj", "{3186787C-C6B3-4040-9450-1DF1ECD92DFA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pamaxie.Helpers", "Libs\Pamaxie.Helpers\Pamaxie.Helpers.csproj", "{0FCFA5A8-5CD5-4870-A7C8-D97E11046FCD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -56,12 +62,32 @@ Global
 		{5A232FCA-1478-41F3-A09F-05C8EBD910AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5A232FCA-1478-41F3-A09F-05C8EBD910AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5A232FCA-1478-41F3-A09F-05C8EBD910AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3186787C-C6B3-4040-9450-1DF1ECD92DFA}.Apply Migrations|Any CPU.ActiveCfg = Debug|Any CPU
+		{3186787C-C6B3-4040-9450-1DF1ECD92DFA}.Apply Migrations|Any CPU.Build.0 = Debug|Any CPU
+		{3186787C-C6B3-4040-9450-1DF1ECD92DFA}.Blazor Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{3186787C-C6B3-4040-9450-1DF1ECD92DFA}.Blazor Release|Any CPU.Build.0 = Debug|Any CPU
+		{3186787C-C6B3-4040-9450-1DF1ECD92DFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3186787C-C6B3-4040-9450-1DF1ECD92DFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3186787C-C6B3-4040-9450-1DF1ECD92DFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3186787C-C6B3-4040-9450-1DF1ECD92DFA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0FCFA5A8-5CD5-4870-A7C8-D97E11046FCD}.Apply Migrations|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FCFA5A8-5CD5-4870-A7C8-D97E11046FCD}.Apply Migrations|Any CPU.Build.0 = Debug|Any CPU
+		{0FCFA5A8-5CD5-4870-A7C8-D97E11046FCD}.Blazor Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FCFA5A8-5CD5-4870-A7C8-D97E11046FCD}.Blazor Release|Any CPU.Build.0 = Debug|Any CPU
+		{0FCFA5A8-5CD5-4870-A7C8-D97E11046FCD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0FCFA5A8-5CD5-4870-A7C8-D97E11046FCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0FCFA5A8-5CD5-4870-A7C8-D97E11046FCD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0FCFA5A8-5CD5-4870-A7C8-D97E11046FCD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{34D0F08C-F9DA-4CAF-9A79-6928688E7D3C} = {1B9E48F3-C9C1-42C4-8219-6C9EC7859B9F}
+		{B5C5E83C-CBD3-4E37-B93C-F267FA70E71E} = {1B9E48F3-C9C1-42C4-8219-6C9EC7859B9F}
+		{5A232FCA-1478-41F3-A09F-05C8EBD910AC} = {9F3112A6-4D00-4510-84E2-B81F44B7AF8E}
+		{3186787C-C6B3-4040-9450-1DF1ECD92DFA} = {9F3112A6-4D00-4510-84E2-B81F44B7AF8E}
+		{0FCFA5A8-5CD5-4870-A7C8-D97E11046FCD} = {9F3112A6-4D00-4510-84E2-B81F44B7AF8E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {52DAFAB8-3270-4409-B685-1DA2DC8C25CD}

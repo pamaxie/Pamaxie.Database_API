@@ -66,7 +66,7 @@ public sealed class UserController : ControllerBase
 
         if (string.IsNullOrWhiteSpace(authHeader) || !authHeader.StartsWith("Basic"))
         {
-            return Unauthorized(authHeader ?? string.Empty);
+            return Unauthorized();
         }
         
         var authResult = await ValidateUserCredentials(authHeader.Substring("Basic ".Length).Trim());
@@ -225,7 +225,7 @@ public sealed class UserController : ControllerBase
             return StatusCode(500, "We hit an unexpected error while attempting to create the user.");
         }
 
-        user.Flags = UserFlags.ConfirmedAccount;
+        user.Flags |= UserFlags.ConfirmedAccount;
         await _dbDriver.Service.Users.UpdateAsync(user);
 
         return Ok("Thank you for confirming your account. We will get back in touch with you once we cleared you" +
@@ -254,20 +254,29 @@ public sealed class UserController : ControllerBase
         }
 
         PamUser user = await GetRequestBodyPamUserAsync();
+
+        if (user.Id < 1)
+        {
+            return BadRequest("The user Id is not valid. Please ensure you are using a valid user id");
+        }
+        
         PamUser requestingUser;
         if (!await IsPamStaff(userId))
         {
             requestingUser = (PamUser) await _dbDriver.Service.Users.GetAsync(userId);
             user.Flags = UserFlags.None;
+            user.CreationDate = DateTime.MinValue;
+            user.Projects = null;
+            user.KnownIps = null;
             
-             if (user.Id != userId)
-             {
-                 return Unauthorized("You are not allowed to change any users besides yourself.");
-             }
+            if (user.Id != userId)
+            {
+                return Unauthorized("You are not allowed to change any users besides yourself.");
+            }
         }
         else
         {
-            requestingUser = await GetRequestBodyPamUserAsync();
+            requestingUser = user;
         }
 
         if (requestingUser == null)
@@ -275,16 +284,17 @@ public sealed class UserController : ControllerBase
             return NotFound("The requesting user could not be found.");
         }
 
-        if (user == null)
-        {
-            return NotFound("The requested user could not be found.");
-        }
-
         if (string.IsNullOrWhiteSpace(user.FirstName) || 
             string.IsNullOrWhiteSpace(user.LastName) ||
+            string.IsNullOrWhiteSpace(user.Email) ||
             user.Id < 0)
         {
             return BadRequest("The user object is not valid.");
+        }
+
+        if (!await _dbDriver.Service.Users.ExistsAsync(user.Id))
+        {
+            return NotFound();
         }
 
         var couldUpdate = await _dbDriver.Service.Users.UpdateAsync(user);
@@ -492,11 +502,11 @@ public sealed class UserController : ControllerBase
 
         if (isEmail)
         {
-            var user = await _dbDriver.Service.Users.GetAsync(queryParam);
+            var user = await _dbDriver.Service.Users.GetViaMailAsync(queryParam);
             return user.Id;
         } else
         {
-            var user = await _dbDriver.Service.Users.GetViaMailAsync(queryParam);
+            var user = await _dbDriver.Service.Users.GetAsync(queryParam);
             return user.Id;
         }
     }
@@ -530,7 +540,7 @@ public sealed class UserController : ControllerBase
     /// 
     /// </summary>
     /// <returns></returns>
-    [HttpGet("loadFully")]
+    [HttpPost("loadFully")]
     public async Task<ActionResult<bool>> LoadFully()
     {
         var token = Request.Headers["authorization"];
@@ -549,9 +559,9 @@ public sealed class UserController : ControllerBase
         
         var user = await GetRequestBodyPamUserAsync();
 
-        if (user == null)
+        if (user == null || user.Id < 1)
         {
-            return BadRequest("Could not read user from body of request");
+            return BadRequest("Could not read a user from body of request or it was invalid");
         }
 
         if (!await IsPamStaff(requestingUserId))
@@ -564,7 +574,6 @@ public sealed class UserController : ControllerBase
 
         user = (PamUser) await _dbDriver.Service.Users.GetAsync(user.Id);
         var loadedUser = await _dbDriver.Service.Users.LoadFullyAsync(user);
-
         user.PasswordHash = null;
         return Ok(JsonConvert.SerializeObject(loadedUser));
     }
@@ -573,7 +582,7 @@ public sealed class UserController : ControllerBase
     /// 
     /// </summary>
     /// <returns></returns>
-    [HttpGet("loadIps")]
+    [HttpPost("loadIps")]
     public async Task<ActionResult<bool>> LoadIps()
     {
         var token = Request.Headers["authorization"];
@@ -616,7 +625,7 @@ public sealed class UserController : ControllerBase
     /// 
     /// </summary>
     /// <returns></returns>
-    [HttpGet("loadProjects")]
+    [HttpPost("loadProjects")]
     public async Task<ActionResult<bool>> LoadProjects()
     {
         var token = Request.Headers["authorization"];
@@ -660,7 +669,7 @@ public sealed class UserController : ControllerBase
         using StreamReader reader = new StreamReader(HttpContext.Request.Body);
         var body = await reader.ReadToEndAsync();
 
-        PamUser user = new PamUser();
+        PamUser user;
         try
         {
             user = JsonConvert.DeserializeObject<PamUser>(body);
@@ -768,7 +777,7 @@ public sealed class UserController : ControllerBase
     private async Task<bool> IsPamStaff(long userId)
     {
         var dbObj = await _dbDriver.Service.Users.GetAsync(userId);
-        if (dbObj is IPamUser user)
+        if (dbObj is PamUser user)
         {
             return user.Flags.HasFlag(UserFlags.PamaxieStaff);
         }
@@ -779,7 +788,7 @@ public sealed class UserController : ControllerBase
     private async Task<bool> ValidateUserAccess(long userId)
     {
         var dbObj = await _dbDriver.Service.Users.GetAsync(userId);
-        if (dbObj is IPamUser user)
+        if (dbObj is PamUser user)
         {
             return await ValidateUserAccess(user);
         }
@@ -801,7 +810,7 @@ public sealed class UserController : ControllerBase
         }
         
         IPamUser user = await _dbDriver.Service.Users.GetAsync(userName);
-
+        
         if (user == null)
         {
             return (false, null);
@@ -813,7 +822,7 @@ public sealed class UserController : ControllerBase
             return (false, user);
         }
         
-        if (Argon2.Verify(user.PasswordHash, userPass))
+        if (await _dbDriver.Service.Users.ValidatePassword(userPass, user.Id))
         {
             return (true, user);
         }
