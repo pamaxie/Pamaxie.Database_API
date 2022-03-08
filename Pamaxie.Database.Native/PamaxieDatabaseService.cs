@@ -29,11 +29,12 @@ public sealed class PamaxieDatabaseService : IPamaxieDatabaseService
         ProjectSingleton = new PamProjectInteraction();
     }
 
-    public PamaxieDatabaseService(IPamUserInteraction userInteraction, IPamProjectInteraction projectInteraction, IPamScanInteraction scanInteraction)
+    public PamaxieDatabaseService(IPamUserInteraction userInteraction, IPamProjectInteraction projectInteraction, IPamScanInteraction scanInteraction, IPamScanMachineInteraction scanMachineInteraction)
     {
         UserSingleton = userInteraction;
         ProjectSingleton = projectInteraction;
         ScanSingleton = scanInteraction;
+        ScanMachinesSingleton = scanMachineInteraction;
     }
     
     /// <inheritdoc cref="IPamaxieDatabaseService.IsDbConnected"/>
@@ -57,8 +58,13 @@ public sealed class PamaxieDatabaseService : IPamaxieDatabaseService
 
     /// <inheritdoc cref="IPamaxieDatabaseService.Scans"/>
     public IPamScanInteraction Scans => ScanSingleton;
-    
+
     internal static IPamScanInteraction ScanSingleton { get; set; }
+
+    /// <inheritdoc cref="IPamaxieDatabaseService.ScanMachines"/>
+    public IPamScanMachineInteraction ScanMachines => ScanMachinesSingleton;
+    
+    internal static IPamScanMachineInteraction ScanMachinesSingleton { get; set; }
 
     /// <inheritdoc cref="IPamaxieDatabaseService.ValidateConfiguration"/>
     public bool ValidateConfiguration(IPamaxieDatabaseConfiguration connectionParams)
@@ -94,6 +100,8 @@ public sealed class PamaxieDatabaseService : IPamaxieDatabaseService
         {
             PgSqlContext.SqlConnectionString = connectionParams.Db1Config;
             DbConnectionHost1 = ConnectionMultiplexer.Connect(connectionParams.Db2Config);
+            ScanSingleton = new PamScanInteraction(this);
+            ScanMachinesSingleton = new PamScanMachineInteraction(this);
         }
         catch (RedisConnectionException)
         {
@@ -132,6 +140,8 @@ public sealed class PamaxieDatabaseService : IPamaxieDatabaseService
         
         CleanRedisConnection();
         DbConnectionHost1 = await ConnectionMultiplexer.ConnectAsync(connectionParams.Db1Config);
+        ScanSingleton = new PamScanInteraction(this);
+        ScanMachinesSingleton = new PamScanMachineInteraction(this);
         PgSqlContext.SqlConnectionString = connectionParams.Db2Config;
         
 

@@ -33,6 +33,11 @@ namespace Pamaxie.Database.Extensions
         IPamScanInteraction Scans { get; }
         
         /// <summary>
+        /// Service for accessing machines that are currently scanning to keep track of what is and isn't pamaxie owned
+        /// </summary>
+        IPamScanMachineInteraction ScanMachines { get; }
+        
+        /// <summary>
         /// Validates the connection to the database with the reached in database context
         /// </summary>
         /// <param name="connectionParams">The connection parameters for establishing a connection with the database</param>

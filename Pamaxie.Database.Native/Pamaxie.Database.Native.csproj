@@ -30,14 +30,14 @@
     </PackageReference>
     <PackageReference Include="IdGen" Version="3.0.0" />
     <PackageReference Include="Isopoh.Cryptography.Argon2" Version="1.1.11" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="6.0.3" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="6.0.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.3" />
-    <PackageReference Include="Pamaxie.Data" Version="6.3.18" />
+    <PackageReference Include="Pamaxie.Data" Version="6.3.19" />
     <PackageReference Include="Spectre.Console" Version="0.43.0" />
-    <PackageReference Include="StackExchange.Redis" Version="2.2.88" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.2">
+    <PackageReference Include="StackExchange.Redis" Version="2.5.43" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.3">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>

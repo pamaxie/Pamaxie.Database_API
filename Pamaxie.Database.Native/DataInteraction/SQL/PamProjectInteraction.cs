@@ -199,8 +199,27 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
 
         return item;
     }
-    
-    public async Task<bool> ValidateTokenAsync(string token)
+
+    public async Task<bool> IsTokenActiveAsync(long tokenId)
+    {
+        if (tokenId <= 0)
+        {
+            throw new ArgumentException(
+                "The reached in token Id is invalid", nameof(tokenId));
+        }
+        
+        await using var context = new PgSqlContext();
+        return await context.ApiKeys.AnyAsync(x => x.Id == tokenId);
+    }
+
+    public async Task<bool> IsPamProject(long projectId)
+    {
+        await using var context = new PgSqlContext();
+        var project = await context.Projects.FirstOrDefaultAsync(x => x.Id == projectId);
+        return await context.Projects.AnyAsync(x => x.Id == project.OwnerId && x.Flags.HasFlag(UserFlags.PamaxieStaff));
+    }
+
+    public async Task<(bool, long, long)> ValidateTokenAsync(string token)
     {
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -211,19 +230,26 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         
         if (!token.StartsWith("PamToken/-//"))
         {
-            return false;
+            return (false, 0, 0);
         }
 
         var tokenParts = token.Split("/-//");
         
         if (tokenParts.Length < 3)
         {
-            return false;
+            return (false, 0, 0);
         }
         
         if (!long.TryParse(tokenParts[1], out long projectId))
         {
-            return false;
+            return (false, 0, 0);
+        }
+
+        var project = await context.Projects.FirstOrDefaultAsync(x => x.Id == projectId);
+
+        if (project == null || project.Flags.HasFlag(ProjectFlags.Locked))
+        {
+            return (false, 0, 0);
         }
         
         var apiKeys = context.ApiKeys.Where(x => x.ProjectId == projectId);
@@ -232,11 +258,11 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         {
             if (Argon2.Verify(token, apiKey.CredentialHash))
             {
-                return true;
+                return (true, projectId, apiKey.Id);
             }
         }
 
-        return false;
+        return (false, 0, 0);
     }
 
     public async Task<bool> HasPermissionAsync(long projectId,long userId, ProjectPermissions permissions)

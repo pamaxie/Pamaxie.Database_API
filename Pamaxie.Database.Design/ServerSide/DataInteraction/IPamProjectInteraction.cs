@@ -39,17 +39,31 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         public Task<IPamProject> LoadUsersAsync(IPamProject item);
 
         /// <summary>
+        /// Checks if the token is currently being used and if it still exists.
+        /// </summary>
+        /// <param name="tokenId"></param>
+        /// <returns></returns>
+        public Task<bool> IsTokenActiveAsync(long tokenId);
+
+        /// <summary>
+        /// Checks weather a project is a pamaxie internal project (hosted by staff members and thus making it "official"
+        /// </summary>
+        /// <param name="projectId"></param>
+        /// <returns></returns>
+        public Task<bool> IsPamProject(long projectId);
+
+        /// <summary>
         /// Checks if a login can be authenticated via their <see cref="token"/>
         /// </summary>
-        /// <param name="projectId">Id of the project that should be verified</param>
         /// <param name="token">The auth token fot the project</param>
         /// <returns><see cref="IPamProject"/> that could be authenticated with the token</returns>
-        public Task<bool> ValidateTokenAsync(string token);
+        public Task<(bool wasSuccess, long projectId, long apiKeyId)> ValidateTokenAsync(string token);
 
         /// <summary>
         /// Removes a Api Token to a project
         /// </summary>
         /// <param name="projectId">Id of the project to create a token for</param>
+        /// <param name="expiryTime"></param>
         /// <returns>Api token that was auto generated for the user (login credential)</returns>
         public Task<string> CreateTokenAsync(long projectId, DateTime expiryTime);
 

@@ -76,10 +76,10 @@ public sealed class UserController : ControllerBase
             return Unauthorized("Invalid username or password.");
         }
 
-        var newToken = _generator.CreateToken(authResult.user.Id, AppConfigManagement.JwtSettings, false, longLivedToken);
+        var newToken = _generator.CreateToken(authResult.user.Id, AppConfigManagement.JwtSettings, null, longLivedToken);
         authResult.user.PasswordHash = null;
         var items = new { Token = newToken, User = authResult.user};
-        return Ok(JsonConvert.SerializeObject(items, Formatting.Indented));
+        return Ok(JsonConvert.SerializeObject(items));
     }
     
     /// <summary>
@@ -118,7 +118,7 @@ public sealed class UserController : ControllerBase
             return Unauthorized();
         }
 
-        var newToken = _generator.CreateToken(userId, AppConfigManagement.JwtSettings, false, longLivedToken);
+        var newToken = _generator.CreateToken(userId, AppConfigManagement.JwtSettings, null, longLivedToken);
         return newToken;
     }
     
@@ -131,28 +131,13 @@ public sealed class UserController : ControllerBase
     [Consumes(MediaTypeNames.Application.Json)]
     public async Task<ActionResult> CreateTask()
     {
-        var token = Request.Headers["authorization"];
-        
-        if (JwtTokenGenerator.IsApplicationToken(token))
-        {
-            return Unauthorized("Invalid Token type");
-        }
-
-        var userId = JwtTokenGenerator.GetOwnerKey(token);
-        
-        if (userId < 1 || !await ValidateUserAccess(userId))
-        {
-            return Unauthorized("The user is not authorized to access our system any longer");
-        }
-        
         var user = await GetRequestBodyPamUserAsync();
 
         if (user == null)
         {
             return BadRequest("The input data was in an invalid format or contained an unexpected item.");
         }
-
-
+        
         if (string.IsNullOrWhiteSpace(user.Email))
         {
             return BadRequest("The users email was empty. This field is required");
@@ -167,19 +152,31 @@ public sealed class UserController : ControllerBase
         {
             return BadRequest("The users username was empty. This field is required.");
         }
-        
+
+        if (user.UserName.Length < 4)
+        {
+            return BadRequest("The users username should always be at least 4 characters.");
+        }
+
+        if (!user.PasswordHash.Contains("$argon2"))
+        {
+            return BadRequest(
+                "The validity of the password hash algorithm could not be validated. Please make sure you use argon2.");
+        }
+
+        user.Id = 0;
         user.Flags = UserFlags.None;
         user.CreationDate = DateTime.Now;
         user.Projects = null;
 
         if (await _dbDriver.Service.Users.ExistsEmailAsync(user.Email))
         {
-            return Conflict("This email already exists.");
+            return Conflict("This users email already exists");
         }
 
         if (await _dbDriver.Service.Users.ExistsUsernameAsync(user.UserName))
         {
-            return Conflict("This username already exists.");
+            return Conflict("This users username already exists.");
         }
 
         var creationResult = await _dbDriver.Service.Users.CreateAsync(user);

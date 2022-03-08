@@ -6,9 +6,9 @@ using Pamaxie.Database.Native.NoSql;
 
 namespace Pamaxie.Database.Native.DataInteraction;
 
-public class PamScanInteractionBase : PamNoSqlInteractionBase, IPamScanInteraction
+public class PamScanInteraction : PamNoSqlInteractionBase, IPamScanInteraction
 {
-    public PamScanInteractionBase(PamaxieDatabaseService owner) : base(owner) { }
+    public PamScanInteraction(PamaxieDatabaseService owner) : base(owner) { }
     
     public override async Task<IPamNoSqlObject> GetAsync(string uniqueKey)
     {
@@ -36,7 +36,7 @@ public class PamScanInteractionBase : PamNoSqlInteractionBase, IPamScanInteracti
 
     public override async Task<(bool, string)> CreateAsync(IPamNoSqlObject data)
     {
-        if (data is PamScanData<ImageScanResult> scanData)
+        if (data is PamScanData<PamImageScanResult> scanData)
         {
             var scan = scanData.ToBusinessLogic(out var userDataScanResult);
             
@@ -57,7 +57,7 @@ public class PamScanInteractionBase : PamNoSqlInteractionBase, IPamScanInteracti
 
     public override async Task<bool> UpdateAsync(IPamNoSqlObject data)
     {
-        if (data is PamScanData<ImageScanResult> scanData)
+        if (data is PamScanData<PamImageScanResult> scanData)
         {
             var scan = scanData.ToBusinessLogic(out var userDataScanResult);
             if (userDataScanResult is not ImageScanResult imageScanResult)
@@ -71,5 +71,12 @@ public class PamScanInteractionBase : PamNoSqlInteractionBase, IPamScanInteracti
         {
             return await base.UpdateAsync(data);
         }
+    }
+
+    public async Task<bool> DeleteAsync(string key)
+    {
+        var toBeDeletedData = new PamSqlObject();
+        toBeDeletedData.Key = key;
+        return await base.DeleteAsync(toBeDeletedData);
     }
 }
