@@ -1,6 +1,7 @@
 # Pamaxie.Database
 [![Build .Net](https://github.com/pamaxie/Pamaxie.Database/actions/workflows/dotnet.yml/badge.svg)](https://github.com/pamaxie/Pamaxie.Database/actions/workflows/dotnet.yml)
 [![CodeQL](https://github.com/pamaxie/Pamaxie.Database/actions/workflows/codeQL.yml/badge.svg)](https://github.com/pamaxie/Pamaxie.Database/actions/workflows/codeQL.yml)
+[![Publish Docker image](https://github.com/pamaxie/Pamaxie.Database/actions/workflows/docker-image.yml/badge.svg)](https://github.com/pamaxie/Pamaxie.Database/actions/workflows/docker-image.yml)
 
 ## About
 
