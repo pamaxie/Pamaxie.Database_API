@@ -42,8 +42,11 @@ public sealed class Startup
         {
             AnsiConsole.MarkupLine("The applications configuration could not be read. The detailed problem was: \n" + 
                                    issue);
+            AnsiConsole.MarkupLine("These errors need to be corrected before starting the application. Exiting the application now...");
             System.Environment.Exit(-501);
         }
+        
+        Console.WriteLine("Testing");
 
         AppConfigManagement.LoadConfiguration();
         services.AddControllers();

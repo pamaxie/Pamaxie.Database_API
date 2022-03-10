@@ -684,7 +684,7 @@ public sealed class UserController : ControllerBase
 
     private async Task<bool> SendChangeEmailAsync(string userEmail, string userName, bool wasDeleted = false)
     {
-        var token = Environment.GetEnvironmentVariable(AppConfigManagement.SendGridVar, EnvironmentVariableTarget.Process);
+        var token = Environment.GetEnvironmentVariable(AppConfigManagement.SendGridVar);
 
         if (string.IsNullOrWhiteSpace(token))
         {
@@ -717,7 +717,7 @@ public sealed class UserController : ControllerBase
     
     private async Task<bool> SendConfirmationEmailAsync(long userId, string userEmail, string userName)
     {
-        var token = Environment.GetEnvironmentVariable(AppConfigManagement.SendGridVar, EnvironmentVariableTarget.Process);
+        var token = Environment.GetEnvironmentVariable(AppConfigManagement.SendGridVar);
 
         if (string.IsNullOrWhiteSpace(token))
         {

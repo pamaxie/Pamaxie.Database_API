@@ -68,56 +68,42 @@ public class AppConfigManagement
 
         if (DockerEnvVars.InDocker)
         {
-            var dbSettings = Environment.GetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar, EnvironmentVariableTarget.Machine);
-            var jwtSettings = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar, EnvironmentVariableTarget.Machine);
-            var sendGridToken= Environment.GetEnvironmentVariable(DockerEnvVars.SendGridEnvVar, EnvironmentVariableTarget.Machine);
+            var dbSettings = Environment.GetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar);
+            var jwtSettings = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar);
+            var sendGridToken= Environment.GetEnvironmentVariable(DockerEnvVars.SendGridEnvVar);
 
-            if (string.IsNullOrEmpty(sendGridToken))
+            if (!string.IsNullOrWhiteSpace(dbSettings) &&
+                !string.IsNullOrWhiteSpace(jwtSettings) &&
+                !string.IsNullOrWhiteSpace(sendGridToken))
             {
-                AnsiConsole.MarkupLine("[red]We could not find a sendgrid api token. This is required for the service to function[/]");
-                return false;
+                return true;
             }
-
-            if (!string.IsNullOrWhiteSpace(dbSettings) && 
-                !string.IsNullOrWhiteSpace(jwtSettings)) return true;
                 
             AnsiConsole.MarkupLine("[yellow]We could not find part of your configuration. " +
-                                   "We will try to regenerate it now for you[/]");
+                                   "Please make sure the right environment Variables are set[/]");
 
             if (string.IsNullOrWhiteSpace(dbSettings))
             {
-                if (GenerateConfig(MissingSettings.Database))
-                {
-                    additionalIssue =
-                        "[red]Could not generate the Missing Database settings from the existing environment" +
-                        "variables. Please recreate the docker container to fix this issue.[/]";
-                    return false;
-                }
+                additionalIssue +=
+                    "[red]Could not find a database configuration. This is required for this API to work. Please set it using the flag" +
+                    $" -e {DockerEnvVars.DbSettingsEnvVar} = <YourConfig> during docker run[/]\n\n";
             }
 
             if (string.IsNullOrWhiteSpace(jwtSettings))
             {
-                if (!GenerateConfig(MissingSettings.JwtBearer)) return true;
-
-                additionalIssue =
-                    "[red]Could not generate the missing JwtBearer settings from the existing environment" +
-                    "variables. Please recreate the docker container to fix this issue.[/]";
-
-                return false;
+                additionalIssue +=
+                    "[red]Could not find a jwt configuration. This is required for this API to work. Please set it using the flag" +
+                    $" -e {DockerEnvVars.JwtSettingsEnvVar} = <YourConfig> during docker run[/]\n\n";
             }
             
             if (string.IsNullOrWhiteSpace(sendGridToken))
             {
-                if (!GenerateConfig(MissingSettings.SendGrid)) return true;
-
-                additionalIssue =
-                    "[red]Could not generate the missing Sendgrid settings from the existing environment" +
-                    "variables. Please recreate the docker container to fix this issue.[/]";
-
-                return false;
+                additionalIssue +=
+                    "[red]Could not find a sendgrid token. This is required for this API to work. Please set it using the flag" +
+                    $" -e {DockerEnvVars.SendGridEnvVar} = <YourToken> during docker run[/]\n\n";
             }
 
-            return true;
+            return false;
         }
 
         if (!File.Exists(SettingsFileName))
@@ -203,13 +189,10 @@ public class AppConfigManagement
     {
         if (DockerEnvVars.InDocker)
         {
-            var dbSettings = Environment.GetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar, EnvironmentVariableTarget.Machine);
-            var jwtSettings = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar, EnvironmentVariableTarget.Machine);
-            var sendgridToken =
-                Environment.GetEnvironmentVariable(DockerEnvVars.SendGridEnvVar, EnvironmentVariableTarget.Machine);
-            
-            var applicationUrl =
-                Environment.GetEnvironmentVariable(DockerEnvVars.HostUrl, EnvironmentVariableTarget.Machine);
+            var dbSettings = Environment.GetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar);
+            var jwtSettings = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar);
+            var sendgridToken = Environment.GetEnvironmentVariable(DockerEnvVars.SendGridEnvVar);
+            var applicationUrl = Environment.GetEnvironmentVariable(DockerEnvVars.HostUrl);
 
             if (!string.IsNullOrWhiteSpace(applicationUrl))
             {
@@ -220,13 +203,13 @@ public class AppConfigManagement
             {
                 throw new Exception("The settings could not be found. Please ensure the docker container " +
                                     "was configured properly and that the environment User-Level " +
-                                    "Environment-Variables with the name: {DbSettingsEnvVar} " +
-                                    "and {JwtSettingsEnvVar} are set.");
+                                    $"Environment-Variables with the name: {DockerEnvVars.DbSettingsEnvVar}, " +
+                                    $"{DockerEnvVars.JwtSettingsEnvVar} and {DockerEnvVars.SendGridEnvVar} are set.");
             }
 
             JwtSettings = JsonConvert.DeserializeObject<JwtTokenConfig>(jwtSettings);
             DbSettings = JsonConvert.DeserializeObject<DbSettings>(dbSettings);
-            Environment.SetEnvironmentVariable(SendGridVar, sendgridToken, EnvironmentVariableTarget.Process);
+            Environment.SetEnvironmentVariable(SendGridVar, sendgridToken);
             return;
         }
 
@@ -308,42 +291,40 @@ public class AppConfigManagement
             
         if (DockerEnvVars.InDocker)
         {
-            dbConnectionConfig = Environment.GetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar);
-            jwtBearerConfig = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar);
+            throw new InvalidOperationException(
+                "Cannot regenerate settings for docker containers. They should always be part of the dockers env vars");
+        }
+
+        if (!File.Exists(SettingsFileName))
+        {
+            AnsiConsole.MarkupLine("[red]We could not find the settings file. Creating one now! The new file will be stored" +
+                                   $"in the application directory with the name {SettingsFileName}.[/]");
+            File.WriteAllText(SettingsFileName, string.Empty);
         }
         else
         {
-            if (!File.Exists(SettingsFileName))
+            var configFileText = File.ReadAllText(SettingsFileName);
+
+            if (string.IsNullOrWhiteSpace(configFileText))
             {
-                AnsiConsole.MarkupLine("[red]We could not find the settings file. Creating one now! The new file will be stored" +
-                                       $"in the application directory with the name {SettingsFileName}.[/]");
-                File.WriteAllText(SettingsFileName, string.Empty);
+                AnsiConsole.MarkupLine("Config file is empty. We'll create completely new settings now");
             }
             else
             {
-                var configFileText = File.ReadAllText(SettingsFileName);
-
-                if (string.IsNullOrWhiteSpace(configFileText))
+                JObject jObject = JObject.Parse(configFileText);
+                var dbSettings = jObject.Property(DbSettingsNode);
+                        
+                if (dbSettings != null)
                 {
-                    AnsiConsole.MarkupLine("Config file is empty. We'll create completely new settings now");
+                    dbConnectionConfig = dbSettings.ToString();
                 }
-                else
-                {
-                    JObject jObject = JObject.Parse(configFileText);
-                    var dbSettings = jObject.Property(DbSettingsNode);
-                        
-                    if (dbSettings != null)
-                    {
-                        dbConnectionConfig = dbSettings.ToString();
-                    }
                         
 
-                    var jwtSettings = jObject.Property(JwtSettingsNode);
+                var jwtSettings = jObject.Property(JwtSettingsNode);
                         
-                    if (jwtSettings != null)
-                    {
-                        jwtBearerConfig = jwtSettings.ToString();
-                    }
+                if (jwtSettings != null)
+                {
+                    jwtBearerConfig = jwtSettings.ToString();
                 }
             }
         }
@@ -365,37 +346,29 @@ public class AppConfigManagement
 
         if (missingSettings.HasFlag(MissingSettings.SendGrid) || missingSettings.HasFlag(MissingSettings.All))
         {
-            if (DockerEnvVars.InDocker)
+            while (true)
             {
-                throw new InvalidOperationException(
-                    "Cannot regenerate the settings for sendgrid in docker. You need to specify the env var during creation of the container.");
-            }
-            else
-            {
-                while (true)
-                {
-                    var token = AnsiConsole.Ask<string>("Please enter your Twilio Sendgrid Token");
+                var token = AnsiConsole.Ask<string>("Please enter your Twilio Sendgrid Token");
                 
-                    try
-                    {
-                        var client = new SendGridClient(token);
-                    }
-                    catch (Exception ex)
-                    {
-                       AnsiConsole.WriteException(ex);
-                       var retry = AnsiConsole.Ask("Could not validate your token do you want to try again, or just continue" +
-                                                   "with this token?", true);
-                       if (retry)
-                       {
-                           continue;
-                       }
-                    }
-                    
-                    sendgridConfig = token;
-                    break;
+                try
+                {
+                    var client = new SendGridClient(token);
                 }
+                catch (Exception ex)
+                {
+                    AnsiConsole.WriteException(ex);
+                    var retry = AnsiConsole.Ask("Could not validate your token do you want to try again, or just continue" +
+                                                "with this token?", true);
+                    if (retry)
+                    {
+                        continue;
+                    }
+                }
+                    
+                sendgridConfig = token;
+                break;
             }
-            
+
         }
 
         Console.Clear();

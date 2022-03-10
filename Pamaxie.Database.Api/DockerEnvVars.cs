@@ -7,7 +7,7 @@ namespace Pamaxie.Database.Api;
 /// </summary>
 public struct DockerEnvVars
 {
-    internal static bool InDocker => Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true";
+    internal static bool InDocker => Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")?.ToLower() == "true";
     
     /// <summary>
     /// Timeout Settings Env Var

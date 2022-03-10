@@ -6,6 +6,9 @@ using Isopoh.Cryptography.Argon2;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json;
+using Pamaxie.Data;
+using Pamaxie.Database.Native.NoSql;
 using Spectre.Console;
 
 namespace Pamaxie.Database.Api;
@@ -38,7 +41,7 @@ public static class Program
         
         if (DockerEnvVars.InDocker)
         {
-            nameString = Environment.GetEnvironmentVariable(DockerEnvVars.HostStringEnvVar, EnvironmentVariableTarget.Machine);
+            nameString = Environment.GetEnvironmentVariable(DockerEnvVars.HostStringEnvVar);
         }
 
         if (string.IsNullOrWhiteSpace(nameString))
@@ -46,7 +49,7 @@ public static class Program
             //Default Url if nothing was specified, this is basically the "default" server url
             nameString = "https://0.0.0.0";
         }
-        else if (nameString.Contains(","))
+        else if (nameString.Contains(','))
         {
             hostUrl = nameString.Split(',').ToList();
         }
