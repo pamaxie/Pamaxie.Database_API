@@ -101,14 +101,14 @@ public class AppConfigManagement
             {
                 additionalIssue +=
                     "[red]Could not find a jwt configuration. This is required for this API to work. Please set it using the flag" +
-                    $" -e {DockerEnvVars.JwtSecret} = <YourConfig> during docker run[/]\n\n";
+                    $" -e {DockerEnvVars.JwtSecret}=<YourConfig> during docker run[/]\n\n";
             }
             
             if (string.IsNullOrWhiteSpace(sendGridToken))
             {
                 additionalIssue +=
                     "[red]Could not find a sendgrid token. This is required for this API to work. Please set it using the flag" +
-                    $" -e {DockerEnvVars.SendGridEnvVar} = <YourToken> during docker run[/]\n\n";
+                    $" -e {DockerEnvVars.SendGridEnvVar}=<YourToken> during docker run[/]\n\n";
             }
 
             return false;
