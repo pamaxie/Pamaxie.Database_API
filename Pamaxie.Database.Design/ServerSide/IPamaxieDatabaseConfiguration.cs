@@ -33,7 +33,8 @@ namespace Pamaxie.Database.Extensions
         /// <summary>
         /// Loads a configuration for the user from a string.
         /// </summary>
-        /// <param name="config"></param>
-        void LoadConfig(string config);
+        /// <param name="db1Config"></param>
+        /// <param name="db2Config"></param>
+        void LoadConfig(string db1Config, string db2Config);
     }
 }

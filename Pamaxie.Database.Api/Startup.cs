@@ -45,8 +45,6 @@ public sealed class Startup
             AnsiConsole.MarkupLine("These errors need to be corrected before starting the application. Exiting the application now...");
             System.Environment.Exit(-501);
         }
-        
-        Console.WriteLine("Testing");
 
         AppConfigManagement.LoadConfiguration();
         services.AddControllers();
@@ -95,7 +93,7 @@ public sealed class Startup
             Environment.Exit(-1);
         }
         
-        dbDriver.Configuration.LoadConfig(AppConfigManagement.DbSettings.Settings);
+        dbDriver.Configuration.LoadConfig(AppConfigManagement.DbSettings.Db1Settings, AppConfigManagement.DbSettings.Db2Settings);
         services.AddSingleton(dbDriver);
         services.AddTransient<JwtTokenGenerator>();
         dbDriver.Service.ConnectToDatabase();

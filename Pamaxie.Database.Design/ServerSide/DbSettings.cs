@@ -19,6 +19,11 @@ namespace Pamaxie.Database.Extensions
         /// <summary>
         /// Settings that should be used with the database (like a connection string)
         /// </summary>
-        public string Settings { get; set; }
+        public string Db1Settings { get; set; }
+        
+        /// <summary>
+        /// Settings for the second database
+        /// </summary>
+        public string Db2Settings { get; set; }
     }
 }

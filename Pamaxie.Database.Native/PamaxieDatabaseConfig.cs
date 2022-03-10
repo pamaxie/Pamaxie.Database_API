@@ -202,25 +202,15 @@ internal class PamaxieDatabaseConfig : IPamaxieDatabaseConfiguration
 
 
     /// <inheritdoc cref="IPamaxieDatabaseConfiguration.LoadConfig"/>
-    public void LoadConfig(string config)
+    public void LoadConfig(string db1Config, string db2Config)
     {
-        dynamic pConfig = JObject.Parse(config);
-        Db1Config = pConfig.Db1Config;
-        Db2Config = pConfig.Db2Config;
+        Db1Config = db1Config;
+        Db2Config = db2Config;
     }
 
     /// <inheritdoc cref="IPamaxieDatabaseConfiguration.ToString"/>
     public override string ToString()
     {
-        var jObject = new JObject();
-        jObject.Add(nameof(Db1Config), Db1Config);
-        jObject.Add(nameof(Db2Config), Db2Config);
-
-        if (InDocker)
-        {
-            return JsonConvert.SerializeObject(jObject);
-        }
-
-        return JsonConvert.SerializeObject(jObject, Formatting.Indented);
+        return $"{Db1Config}\0{Db2Config}";
     }
 }

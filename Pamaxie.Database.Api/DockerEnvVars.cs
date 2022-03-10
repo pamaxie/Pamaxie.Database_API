@@ -8,6 +8,26 @@ namespace Pamaxie.Database.Api;
 public struct DockerEnvVars
 {
     internal static bool InDocker => Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER")?.ToLower() == "true";
+
+    /// <summary>
+    /// Settings for database 1
+    /// </summary>
+    internal const string Db1Settings = "Db1Settings";
+    
+    /// <summary>
+    /// Settings for database 2
+    /// </summary>
+    internal const string Db2Settings = "Db2Settings";
+
+    /// <summary>
+    /// Settings for the database driver guid
+    /// </summary>
+    internal const string DatabaseDriverGuid = "DbDriverGuid";
+
+    /// <summary>
+    /// Settings that hold the configuration for the jwt settings
+    /// </summary>
+    internal const string JwtSecret = "JwtSecret";
     
     /// <summary>
     /// Timeout Settings Env Var
@@ -18,16 +38,6 @@ public struct DockerEnvVars
     /// Long Lived timeout setting
     /// </summary>
     internal const string LongLivedTokenTimeoutSettingEnvVar = "JwtLLTimeout";
-    
-    /// <summary>
-    /// Settings that hold the configuration for database access
-    /// </summary>
-    internal const string DbSettingsEnvVar = "DbSettings";
-
-    /// <summary>
-    /// Settings that hold the configuration for the jwt settings
-    /// </summary>
-    internal const string JwtSettingsEnvVar = "AuthSettings";
 
     /// <summary>
     /// Default port the application uses

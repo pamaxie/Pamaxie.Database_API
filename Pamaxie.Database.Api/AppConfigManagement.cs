@@ -68,11 +68,12 @@ public class AppConfigManagement
 
         if (DockerEnvVars.InDocker)
         {
-            var dbSettings = Environment.GetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar);
-            var jwtSettings = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar);
+            var db1Settings = Environment.GetEnvironmentVariable(DockerEnvVars.Db1Settings);
+            var db2Settings = Environment.GetEnvironmentVariable(DockerEnvVars.Db2Settings);
+            var jwtSettings = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSecret);
             var sendGridToken= Environment.GetEnvironmentVariable(DockerEnvVars.SendGridEnvVar);
 
-            if (!string.IsNullOrWhiteSpace(dbSettings) &&
+            if (!string.IsNullOrWhiteSpace(db1Settings) &&
                 !string.IsNullOrWhiteSpace(jwtSettings) &&
                 !string.IsNullOrWhiteSpace(sendGridToken))
             {
@@ -82,18 +83,25 @@ public class AppConfigManagement
             AnsiConsole.MarkupLine("[yellow]We could not find part of your configuration. " +
                                    "Please make sure the right environment Variables are set[/]");
 
-            if (string.IsNullOrWhiteSpace(dbSettings))
+            if (string.IsNullOrWhiteSpace(db1Settings))
             {
                 additionalIssue +=
                     "[red]Could not find a database configuration. This is required for this API to work. Please set it using the flag" +
-                    $" -e {DockerEnvVars.DbSettingsEnvVar} = <YourConfig> during docker run[/]\n\n";
+                    $" -e {DockerEnvVars.Db1Settings}=<YourConnectionString> during docker run[/]\n\n";
+            }
+            
+            if (string.IsNullOrWhiteSpace(db2Settings))
+            {
+                additionalIssue +=
+                    "[red]Could not find a database configuration. This is required for this API to work. Please set it using the flag" +
+                    $" -e {DockerEnvVars.Db2Settings}=<YourConnectionString> during docker run[/]\n\n";
             }
 
             if (string.IsNullOrWhiteSpace(jwtSettings))
             {
                 additionalIssue +=
                     "[red]Could not find a jwt configuration. This is required for this API to work. Please set it using the flag" +
-                    $" -e {DockerEnvVars.JwtSettingsEnvVar} = <YourConfig> during docker run[/]\n\n";
+                    $" -e {DockerEnvVars.JwtSecret} = <YourConfig> during docker run[/]\n\n";
             }
             
             if (string.IsNullOrWhiteSpace(sendGridToken))
@@ -189,8 +197,12 @@ public class AppConfigManagement
     {
         if (DockerEnvVars.InDocker)
         {
-            var dbSettings = Environment.GetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar);
-            var jwtSettings = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar);
+            var dbDriverGuid = Environment.GetEnvironmentVariable(DockerEnvVars.DatabaseDriverGuid);
+            var db1Settings = Environment.GetEnvironmentVariable(DockerEnvVars.Db1Settings);
+            var db2Settings = Environment.GetEnvironmentVariable(DockerEnvVars.Db2Settings);
+            var jwtSecret = Environment.GetEnvironmentVariable(DockerEnvVars.JwtSecret);
+            var jwtTimeout = Environment.GetEnvironmentVariable(DockerEnvVars.TokenTimeoutSettingsEnvVar);
+            var jwtLongTimeout = Environment.GetEnvironmentVariable(DockerEnvVars.LongLivedTokenTimeoutSettingEnvVar);
             var sendgridToken = Environment.GetEnvironmentVariable(DockerEnvVars.SendGridEnvVar);
             var applicationUrl = Environment.GetEnvironmentVariable(DockerEnvVars.HostUrl);
 
@@ -199,16 +211,47 @@ public class AppConfigManagement
                 HostUrl = new Uri(applicationUrl);
             }
 
-            if (string.IsNullOrWhiteSpace(dbSettings) || string.IsNullOrWhiteSpace(jwtSettings) || string.IsNullOrWhiteSpace(sendgridToken))
+            if (string.IsNullOrWhiteSpace(db1Settings) || 
+                string.IsNullOrWhiteSpace(db2Settings) || 
+                string.IsNullOrWhiteSpace(jwtSecret) || 
+                string.IsNullOrWhiteSpace(sendgridToken))
             {
                 throw new Exception("The settings could not be found. Please ensure the docker container " +
                                     "was configured properly and that the environment User-Level " +
-                                    $"Environment-Variables with the name: {DockerEnvVars.DbSettingsEnvVar}, " +
-                                    $"{DockerEnvVars.JwtSettingsEnvVar} and {DockerEnvVars.SendGridEnvVar} are set.");
+                                    $"Environment-Variables with the name: {DockerEnvVars.Db1Settings}, " +
+                                    $"{DockerEnvVars.JwtSecret} and {DockerEnvVars.SendGridEnvVar} are set.");
             }
 
-            JwtSettings = JsonConvert.DeserializeObject<JwtTokenConfig>(jwtSettings);
-            DbSettings = JsonConvert.DeserializeObject<DbSettings>(dbSettings);
+            if (string.IsNullOrEmpty(dbDriverGuid))
+            {
+                dbDriverGuid = "283f10c3-5022-4cda-a5a7-e491a1e84b32";
+            }
+
+            if (string.IsNullOrEmpty(jwtTimeout) || int.TryParse(jwtTimeout, out int timeoutNum))
+            {
+                timeoutNum = 10;
+            }
+            
+            if (string.IsNullOrEmpty(jwtLongTimeout)|| int.TryParse(jwtLongTimeout, out int longTimeoutNum))
+            {
+                longTimeoutNum = 30;
+            }
+
+
+            JwtSettings = new JwtTokenConfig()
+            {
+                ExpiresInMinutes = timeoutNum,
+                LongLivedExpiresInDays = longTimeoutNum,
+                Secret = jwtSecret
+            };
+
+            DbSettings = new DbSettings()
+            {
+                DatabaseDriverGuid = new Guid(dbDriverGuid),
+                Db1Settings = db1Settings,
+                Db2Settings = db2Settings
+            };
+            
             Environment.SetEnvironmentVariable(SendGridVar, sendgridToken);
             return;
         }
@@ -228,8 +271,15 @@ public class AppConfigManagement
                 
             if (dbSettings != null)
             {
-                var dbSettingsString =  dbSettings.ToObject<string>();
-                DbSettings = JsonConvert.DeserializeObject<DbSettings>(dbSettingsString);
+                try
+                {
+                    DbSettings = dbSettings.ToObject<DbSettings>();
+                }
+                catch (JsonException)
+                {
+                    throw new Exception(
+                        "Invalid formatting inside of the settings file. Please validate the settings are valid Json");
+                }
             }
             else
             {
@@ -242,8 +292,15 @@ public class AppConfigManagement
                 
             if (jwtSettings != null)
             {
-                var jwtSettingsString = jwtSettings.ToObject<string>();
-                JwtSettings = JsonConvert.DeserializeObject<JwtTokenConfig>(jwtSettingsString);
+                try
+                {
+                    JwtSettings = jwtSettings.ToObject<JwtTokenConfig>();
+                }
+                catch (JsonException)
+                {
+                    throw new Exception(
+                        "Invalid formatting inside of the settings file. Please validate the settings are valid Json");
+                }
             }
             else
             {
@@ -285,8 +342,8 @@ public class AppConfigManagement
     {
         Console.Clear();
 
-        var dbConnectionConfig = string.Empty;
-        var jwtBearerConfig = string.Empty;
+        DbSettings dbConnectionConfig = null;
+        JwtTokenConfig jwtBearerConfig = null;
         var sendgridConfig = string.Empty;
             
         if (DockerEnvVars.InDocker)
@@ -316,7 +373,7 @@ public class AppConfigManagement
                         
                 if (dbSettings != null)
                 {
-                    dbConnectionConfig = dbSettings.ToString();
+                    dbConnectionConfig = dbSettings.ToObject<DbSettings>();
                 }
                         
 
@@ -324,7 +381,7 @@ public class AppConfigManagement
                         
                 if (jwtSettings != null)
                 {
-                    jwtBearerConfig = jwtSettings.ToString();
+                    jwtBearerConfig = dbSettings.ToObject<JwtTokenConfig>();
                 }
             }
         }
@@ -333,7 +390,7 @@ public class AppConfigManagement
         {
             dbConnectionConfig = GenerateDatabaseConfig();
                 
-            if (string.IsNullOrWhiteSpace(dbConnectionConfig))
+            if (dbConnectionConfig == null)
             {
                 return false;
             }
@@ -384,52 +441,33 @@ public class AppConfigManagement
 
         if (missingSettings.HasFlag(MissingSettings.Database) || missingSettings.HasFlag(MissingSettings.All))
         {
-            AnsiConsole.MarkupLine($"[blue]Database Settings: {dbConnectionConfig}[/]\n");
+            AnsiConsole.MarkupLine($"[blue]Database Settings: {JsonConvert.SerializeObject(dbConnectionConfig, Formatting.Indented)}[/]\n");
         }
 
         if (missingSettings.HasFlag(MissingSettings.JwtBearer) || missingSettings.HasFlag(MissingSettings.All))
         {
-            AnsiConsole.MarkupLine($"[green]Jwt Settings: {jwtBearerConfig}[/]");
+            AnsiConsole.MarkupLine($"[green]Jwt Settings: {JsonConvert.SerializeObject(jwtBearerConfig, Formatting.Indented)}[/]");
         }
         
         if (missingSettings.HasFlag(MissingSettings.SendGrid) || missingSettings.HasFlag(MissingSettings.All))
         {
-            AnsiConsole.MarkupLine($"[green]Sendgrid Token: {sendgridConfig}[/]");
-        }
-        
-        if (DockerEnvVars.InDocker)
-        {
-            Environment.SetEnvironmentVariable(DockerEnvVars.JwtSettingsEnvVar, jwtBearerConfig,
-                EnvironmentVariableTarget.User);
-            Environment.SetEnvironmentVariable(DockerEnvVars.DbSettingsEnvVar, dbConnectionConfig,
-                EnvironmentVariableTarget.User);
-        }
-        else
-        {
-            if (!AnsiConsole.Confirm("Do you want to use the configured settings?"))
-            {
-                return false;
-            }
+            AnsiConsole.MarkupLine($"[green]Sendgrid Token: {JsonConvert.SerializeObject(sendgridConfig, Formatting.Indented)}[/]");
         }
 
-        if (!DockerEnvVars.InDocker)
-        {
-            var jObject1 = new JObject();
-            jObject1.Add(DbSettingsNode, dbConnectionConfig);
-            jObject1.Add(JwtSettingsNode, jwtBearerConfig);
-            jObject1.Add(SendGridVar, sendgridConfig);
-            File.WriteAllText(SettingsFileName, JsonConvert.SerializeObject(jObject1, Formatting.Indented));
-        }
+        var pamSettingsObj = 
+            new
+            {
+                DbSettings = dbConnectionConfig, 
+                JwtSettings = jwtBearerConfig, 
+                SendGridToken = sendgridConfig
+            };
+            
+        File.WriteAllText(SettingsFileName, JsonConvert.SerializeObject(pamSettingsObj, Formatting.Indented));
 
         AnsiConsole.MarkupLine("Successfully created your configuration.\n" +
                                "Thank you for using Pamaxie's Services. If you require help using this service " +
                                "please see our wiki with all documentation at [blue]https://wiki.pamaxie.com[/]\n");
 
-        if (DockerEnvVars.InDocker)
-        {
-            return true;
-        }
-        
         AnsiConsole.WriteLine("[yellow]We will now have to exit the program because we require a restart to load the config properly.[/]\n" +
                               "Press any key to exit...");
         Console.ReadKey();
@@ -441,7 +479,7 @@ public class AppConfigManagement
     /// This generates the Jwt Bearer configuration that the API should use
     /// </summary>
     /// <returns></returns>
-    private static string GenerateJwtConfig()
+    private static JwtTokenConfig GenerateJwtConfig()
     {
         var ruler = new Rule("[yellow]Configuration Setup[/]") {Alignment = Justify.Left};
         AnsiConsole.Write(ruler);
@@ -527,28 +565,19 @@ public class AppConfigManagement
             LongLivedExpiresInDays = longLivedTimeout
         };
 
-        return JsonConvert.SerializeObject(authSettings, Formatting.Indented);
+        return authSettings;
     }
 
     /// <summary>
     /// This does some magic to automatically detect the different database drivers available and then tries to generate a config for them.
     /// </summary>
     /// <returns></returns>
-    private static string GenerateDatabaseConfig()
+    private static DbSettings GenerateDatabaseConfig()
     {
         //TODO: add downloading our native driver from a file server to reduce delivery package if someone needs their own database driver.
             
         Console.Clear();
 
-        if (DockerEnvVars.InDocker)
-        {
-            //In a docker container we always assume our default driver if you require a different one please
-            //change this line to your database driver Guid
-            return DbDriverManager
-                .LoadDatabaseDriver(new Guid("283f10c3-5022-4cda-a5a7-e491a1e84b32"))
-                .Configuration.GenerateConfig();
-        }
-            
         var ruler = new Rule("[yellow]Database Configuration[/]") {Alignment = Justify.Left};
         AnsiConsole.Write(ruler);
         var drivers = DbDriverManager.LoadDatabaseDrivers();
@@ -580,10 +609,19 @@ public class AppConfigManagement
             }
         }
             
-        var generatedConfig = driver.Configuration.GenerateConfig();
-        var dbObject = new DbSettings();
-        dbObject.Settings = generatedConfig;
-        dbObject.DatabaseDriverGuid = driver.DatabaseTypeGuid;
-        return JsonConvert.SerializeObject(dbObject);
+        var generatedConfig = driver.Configuration.GenerateConfig().Split('\0');
+
+        if (generatedConfig.Length < 2)
+        {
+            return null;
+        }
+        
+        var dbObject = new DbSettings
+        {
+            Db1Settings = generatedConfig[0],
+            Db2Settings = generatedConfig[1],
+            DatabaseDriverGuid = driver.DatabaseTypeGuid
+        };
+        return dbObject;
     }
 }
