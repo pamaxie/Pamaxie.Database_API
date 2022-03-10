@@ -21,4 +21,5 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENV DOTNET_RUNNING_IN_CONTAINER=true
+ENV Logging__Console__FormatterName=simple
 ENTRYPOINT ["dotnet", "Pamaxie.Database.Api.dll"]

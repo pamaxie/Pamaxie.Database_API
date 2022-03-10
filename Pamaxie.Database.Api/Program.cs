@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
+using Npgsql.Replication.TestDecoding;
 using Pamaxie.Data;
 using Pamaxie.Database.Native.NoSql;
 using Spectre.Console;
