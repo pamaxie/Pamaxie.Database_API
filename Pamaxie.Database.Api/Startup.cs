@@ -97,6 +97,13 @@ public sealed class Startup
         services.AddSingleton(dbDriver);
         services.AddTransient<JwtTokenGenerator>();
         dbDriver.Service.ConnectToDatabase();
+
+        if (dbDriver.Service.IsDbConnected)
+        {
+            AnsiConsole.MarkupLine("[red]Could not connect to one or both databases. Please make sure their configurations are correct[/]");
+            Environment.Exit(-502);
+        }
+        
         dbDriver.Service.ValidateDatabase();
     }
 
