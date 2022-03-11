@@ -20,7 +20,7 @@ namespace Pamaxie.Database.Api.Controllers;
 /// </summary>
 [Authorize]
 [ApiController]
-[Route("[controller]")]
+[Route("db/v1/[controller]")]
 public sealed class ScanController : ControllerBase
 {
 

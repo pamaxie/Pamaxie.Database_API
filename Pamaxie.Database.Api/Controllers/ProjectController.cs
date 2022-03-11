@@ -16,7 +16,7 @@ namespace Pamaxie.Database.Api.Controllers;
 /// </summary>
 [Authorize]
 [ApiController]
-[Route("[controller]")]
+[Route("db/v1/[controller]")]
 public class ProjectController : ControllerBase
 {
     private readonly JwtTokenGenerator _generator;
