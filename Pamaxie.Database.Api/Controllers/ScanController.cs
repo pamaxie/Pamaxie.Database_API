@@ -303,6 +303,30 @@ public sealed class ScanController : ControllerBase
         var deleted = await _dbDriver.Service.Scans.DeleteAsync(scanHash);
         return !deleted ? StatusCode(503, "Encountered an error while deleting scan result") : Accepted();
     }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("CanAuthenticate")]
+    public async Task<ActionResult> CanAuthenticate()
+    {
+        var token = Request.Headers["authorization"];
+        
+        if (!JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
+
+        var apiKeyId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (apiKeyId < 1 || !await ValidateApiKeyAccess(apiKeyId))
+        {
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
+
+        return Ok("The current token seems valid to our system");
+    }
     
     private bool IsValidMd5(string s)
     {
