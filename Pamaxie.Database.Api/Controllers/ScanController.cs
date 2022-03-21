@@ -38,6 +38,23 @@ public sealed class ScanController : ControllerBase
         _generator = generator;
     }
     
+    
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("CanConnect")]
+    [AllowAnonymous]
+    public async Task<ActionResult> CanConnect()
+    {
+        if (_dbDriver.Service.IsDbConnected)
+        {
+            return StatusCode(503, "We are having trouble connecting to our database severs.");
+        }
+        
+        return Ok();
+    }
+    
     /// <summary>
     /// Signs in a user via Basic authentication and returns a token.
     /// </summary>
