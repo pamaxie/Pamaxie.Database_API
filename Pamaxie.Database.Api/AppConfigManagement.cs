@@ -34,7 +34,7 @@ public class AppConfigManagement
     /// <summary>
     /// Url that the server uses for connections externally. This is important for links that are put into emails
     /// </summary>
-    public static Uri HostUrl { get; private set; } = new Uri("https://api.pamaxie.com/");
+    public static Uri HostUrl { get; private set; } = new Uri("https://api.pamaxie.com/db/v1/");
     
     /// <summary>
     /// Environment Variable that stores the Sendgrid token
