@@ -732,11 +732,11 @@ public sealed class UserController : ControllerBase
 
 
         var confirmationCode = Convert.ToHexString(RandomNumberGenerator.GetBytes(10));
-        
+
         msg.SetTemplateData(new
         {
             UserName = userName,
-            SignupUrl = new Uri(AppConfigManagement.HostUrl, $"/user/verifyUser={confirmationCode}")
+            SignupUrl = new Uri(AppConfigManagement.HostUrl + $"user/verifyUser={confirmationCode}")
         });
 
         await client.SendEmailAsync(msg);
