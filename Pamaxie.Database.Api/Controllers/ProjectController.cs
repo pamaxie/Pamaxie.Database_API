@@ -762,7 +762,7 @@ public class ProjectController : ControllerBase
     /// 
     /// </summary>
     /// <returns></returns>
-    [HttpPost("RemoveUser")]
+    [HttpDelete("RemoveUser")]
     public async Task<ActionResult<string>> RemoveUser()
     {
         var token = Request.Headers["authorization"];

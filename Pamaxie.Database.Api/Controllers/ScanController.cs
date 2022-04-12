@@ -202,7 +202,11 @@ public sealed class ScanController : ControllerBase
                               "hash the received data to receive your MD5 hash as a key for storing the object.");
         }
 
-        obj.IsUserScan = !await _dbDriver.Service.Projects.IsPamProject(projectId);
+        if (await _dbDriver.Service.Projects.IsPamProject(projectId))
+        {
+            return Unauthorized("You are not allowed to access this endpoint. Please use the scan endpoint instead.");
+        }
+        
         obj.ScanMachineGuid = scanMachine;
 
         if (!await _dbDriver.Service.Scans.ExistsAsync(obj.Key))
@@ -259,7 +263,7 @@ public sealed class ScanController : ControllerBase
 
         if (!await _dbDriver.Service.Projects.IsPamProject(projectId))
         {
-            return Unauthorized("You are not allowed to delete any scan data, if you are not part of Pamaxies staff.");
+            return Unauthorized("You are not allowed to get any scan data, if you are not part of Pamaxie's staff.");
         }
 
         if (string.IsNullOrWhiteSpace(scanHash))
@@ -304,7 +308,7 @@ public sealed class ScanController : ControllerBase
 
         if (!await _dbDriver.Service.Projects.IsPamProject(projectId))
         {
-            return Unauthorized("You are not allowed to delete any scan data, if you are not part of Pamaxies staff.");
+            return Unauthorized("You are not allowed to delete any scan data, if you are not part of Pamaxie's staff.");
         }
 
         if (string.IsNullOrWhiteSpace(scanHash))
