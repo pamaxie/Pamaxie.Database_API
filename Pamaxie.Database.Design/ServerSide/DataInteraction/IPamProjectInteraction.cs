@@ -23,6 +23,13 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// <param name="item">The <see cref="IPamProject"/> to load the owner from</param>
         /// <returns><see cref="item"/> with it's <see cref="IPamProject.Owner"/> Loaded</returns>
         public Task<IPamProject> LoadOwnerAsync(IPamProject item);
+
+        /// <summary>
+        /// Load the entire Lazy Lists and Properties of a Project
+        /// </summary>
+        /// <param name="item">The <see cref="IPamProject"/> to be fully loaded</param>
+        /// <returns><see cref="item"/> with all its properties loaded</returns>
+        public Task<IPamProject> LoadFullyAsync(IPamProject item);
             
         /// <summary>
         /// Loads the user who last modified the project

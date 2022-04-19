@@ -206,6 +206,16 @@ public class PamProjectInteraction : PamSqlInteractionBase<Project>, IPamProject
         return item;
     }
 
+    public async Task<IPamProject> LoadFullyAsync(IPamProject item)
+    {
+        item = await LoadOwnerAsync(item);
+        item = await LoadLastModifiedUserAsync(item);
+        item = await LoadApiTokensAsync(item);
+        item = await LoadUsersAsync(item);
+        
+        return item;
+    }
+    
     public async Task<bool> IsTokenActiveAsync(long tokenId)
     {
         if (tokenId <= 0)

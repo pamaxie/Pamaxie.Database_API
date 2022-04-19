@@ -914,7 +914,7 @@ public class ProjectController : ControllerBase
         
         if (project == null)
         {
-            return StatusCode(503, "Error while attempting to delete database Object");
+            return StatusCode(503, "Error while attempting to load database Object");
         }
 
         return Ok(JsonConvert.SerializeObject(project));
@@ -978,7 +978,7 @@ public class ProjectController : ControllerBase
 
         if (project == null)
         {
-            return StatusCode(503, "Error while attempting to delete database Object");
+            return StatusCode(503, "Error while attempting to load database Object");
         }
         
         return Ok(JsonConvert.SerializeObject(project));
@@ -1031,7 +1031,7 @@ public class ProjectController : ControllerBase
         
         if (project == null)
         {
-            return StatusCode(503, "Error while attempting to delete database Object");
+            return StatusCode(503, "Error while attempting to load database Object");
         }
 
         return Ok(JsonConvert.SerializeObject(project));
@@ -1084,12 +1084,65 @@ public class ProjectController : ControllerBase
         
         if (project == null)
         {
-            return StatusCode(503, "Error while attempting to delete database Object");
+            return StatusCode(503, "Error while attempting to load database Object");
         }
 
         return Ok(JsonConvert.SerializeObject(project));
     }
     
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <returns></returns>
+    [HttpPost("LoadFully")]
+    public async Task<ActionResult<string>> LoadFully()
+    {
+        var token = Request.Headers["authorization"];
+        var requestingUserId = JwtTokenGenerator.GetOwnerKey(token);
+        var user = (PamUser) await _dbDriver.Service.Users.GetAsync(requestingUserId);
+        
+        if (user == null)
+        {
+            return Unauthorized("The user is not part of our system");
+        }
+        
+        if (!await UserController.ValidateUserAccess(user))
+        {
+            return Unauthorized(
+                "The user does no longer have access to our systems. The user may be deleted or blocked by us internally.");
+        }
+
+        var project = await GetProjectFromMethodBody();
+
+        if (project == null)
+        {
+            return BadRequest("Method body is misshapen or malformed data");
+        }
+
+        if (!await _dbDriver.Service.Projects.ExistsAsync(project.Id))
+        {
+            return NotFound("Specified project does not exist.");
+        }
+        
+        if (!user.Flags.HasFlag(UserFlags.PamaxieStaff))
+        {
+            if (!await _dbDriver.Service.Projects.HasPermissionAsync(project.Id, requestingUserId,
+                    ProjectPermissions.Administrator))
+            {
+                return Unauthorized("You are not allowed to access this project, or lack the permissions to read it");
+            }
+        }
+
+        project = (PamProject) await _dbDriver.Service.Projects.LoadFullyAsync(project);
+        
+        
+        if (project == null)
+        {
+            return StatusCode(503, "Error while attempting to fully load the database object");
+        }
+
+        return Ok(JsonConvert.SerializeObject(project));
+    }
 
     private async Task<PamProject> GetProjectFromMethodBody()
     {
