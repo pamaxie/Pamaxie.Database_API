@@ -26,6 +26,11 @@ public static class Program
     /// <param name="args">Args to be passed</param>
     public static void Main(string[] args)
     {
+        if (Environment.GetEnvironmentVariable("LogEnvVars") == "true")
+        {
+            DockerEnvVars.LogEnvVars();
+        }
+
         CreateHostBuilder(args).Build().Run();
     }
 

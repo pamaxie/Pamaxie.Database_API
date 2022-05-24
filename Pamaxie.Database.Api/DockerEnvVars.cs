@@ -53,4 +53,19 @@ public struct DockerEnvVars
     /// Host url so we can make sure we offer the right url while we send certain emails.
     /// </summary>
     internal const string HostUrl = "EndpointUrl";
+
+    public static void LogEnvVars()
+    {
+        Console.WriteLine("Outputting Currently set environment variables");
+        Console.WriteLine($"Detected Docker: {InDocker}");
+        Console.WriteLine($"Db1 Settings: {Environment.GetEnvironmentVariable(Db1Settings)}");
+        Console.WriteLine($"Db2 Settings: {Environment.GetEnvironmentVariable(Db2Settings)}");
+        Console.WriteLine($"Database Driver Guid: {Environment.GetEnvironmentVariable(DatabaseDriverGuid)}");
+        Console.WriteLine($"Jwt Secret: {Environment.GetEnvironmentVariable(JwtSecret)}");
+        Console.WriteLine($"Token Timeout: {Environment.GetEnvironmentVariable(TokenTimeoutSettingsEnvVar)}");
+        Console.WriteLine($"Long-Lived Token Timeout: {Environment.GetEnvironmentVariable(LongLivedTokenTimeoutSettingEnvVar)}");
+        Console.WriteLine($"Accepted Hosts: {Environment.GetEnvironmentVariable(HostStringEnvVar)}");
+        Console.WriteLine($"Send Grid Token: {Environment.GetEnvironmentVariable(SendGridEnvVar)}");
+        Console.WriteLine($"Host Url: {Environment.GetEnvironmentVariable(HostUrl)}");
+    }
 }
