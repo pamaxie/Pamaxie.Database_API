@@ -40,19 +40,19 @@ public sealed class ScanController : ControllerBase
     
     
     /// <summary>
-    /// 
+    /// Checks if we can connect with our database
     /// </summary>
     /// <returns></returns>
     [HttpGet("CanConnect")]
     [AllowAnonymous]
-    public async Task<ActionResult> CanConnect()
+    public Task<ActionResult> CanConnect()
     {
-        if (_dbDriver.Service.IsDbConnected)
+        if (!_dbDriver.Service.IsDbConnected)
         {
-            return StatusCode(503, "We are having trouble connecting to our database severs.");
+            return Task.FromResult<ActionResult>(StatusCode(503, "We are having trouble connecting to our database severs."));
         }
         
-        return Ok();
+        return Task.FromResult<ActionResult>(Ok());
     }
     
     /// <summary>
@@ -347,6 +347,34 @@ public sealed class ScanController : ControllerBase
         }
 
         return Ok("The current token seems valid to our system");
+    }
+
+    /// <summary>
+    /// Validates if a token is an internal token.
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("IsInternalToken")]
+    public async Task<ActionResult> IsInternalToken(){
+        var token = Request.Headers["authorization"];
+        
+        if (!JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
+
+        var apiKeyId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (apiKeyId < 1 || !await ValidateApiKeyAccess(apiKeyId))
+        {
+            return Unauthorized("The project is no longer authorized to access our system");
+        }
+
+        if (await _dbDriver.Service.Projects.IsPamProject(JwtTokenGenerator.GetProjectId(token)))
+        {
+            return Ok("The current token was recognized as a valid internal token");
+        }
+
+        return Unauthorized("The token was not recognized as a valid internal token. Please ensure you are using a valid token.");
     }
     
     private bool IsValidMd5(string s)
