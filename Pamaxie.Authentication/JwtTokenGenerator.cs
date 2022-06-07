@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
@@ -58,17 +59,28 @@ namespace Pamaxie.Authentication
                 throw new InvalidOperationException("We hit an unexpected problem while generating the token");
             }
 
-            var token = new JwtSecurityToken("Pamaxie", "Pamaxie", null, DateTime.Now.ToUniversalTime(), expires, new SigningCredentials(new SymmetricSecurityKey(key),SecurityAlgorithms.HmacSha256Signature));
-            token.Payload["ownerId"] = ownerId;
+            var tokenDescriptor = new SecurityTokenDescriptor{
+                Subject = new ClaimsIdentity(new[] { new Claim("Pamaxie", ownerId.ToString()) }),
+                Issuer = "api.pamaxie.com",
+                Claims = new Dictionary<string, object>
+                {
+                    ["ownerId"] = ownerId 
+                },
+                IssuedAt = DateTime.Now,
+                NotBefore = DateTime.Now,
+                Expires = expires.Value,
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
 
             if (scanMachineSettings != null)
             {
-                token.Payload["isApiToken"] = scanMachineSettings.IsScanMachine;
-                token.Payload["apiTokenMachineGuid"] = scanMachineSettings.ScanMachineGuid;
-                token.Payload["projectId"] = scanMachineSettings.ProjectId;
+                tokenDescriptor.Claims.Add("isApiToken", scanMachineSettings.IsScanMachine);
+                tokenDescriptor.Claims.Add("apiTokenMachineGuid", scanMachineSettings.ScanMachineGuid);
+                tokenDescriptor.Claims.Add("projectId", scanMachineSettings.ProjectId);
             }
             
             var handler = new JwtSecurityTokenHandler();
+            var token = handler.CreateToken(tokenDescriptor);
             var jwt = handler.WriteToken(token);
             return new JwtToken { ExpiresAtUTC = (DateTime)expires, Token = jwt, IsLongLived = longLivedToken};
         }
