@@ -202,7 +202,7 @@ public sealed class ScanController : ControllerBase
                               "hash the received data to receive your MD5 hash as a key for storing the object.");
         }
 
-        if (await _dbDriver.Service.Projects.IsPamProject(projectId))
+        if (!await _dbDriver.Service.Projects.IsPamProject(projectId))
         {
             return Unauthorized("You are not allowed to access this endpoint. Please use the scan endpoint instead.");
         }
