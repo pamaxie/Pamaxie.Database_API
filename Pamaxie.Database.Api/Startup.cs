@@ -63,11 +63,10 @@ public sealed class Startup
                 {
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
+                    ValidateAudience = false,
                     ValidateLifetime = true,
-                    ValidIssuer = "Pamaxie",
-                    ValidAudience = "Pamaxie"
+                    ValidateIssuer = true,
+                    ValidIssuer = "api.pamaxie.com"
                 };
             });
 

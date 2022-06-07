@@ -60,7 +60,7 @@ namespace Pamaxie.Authentication
             }
 
             var tokenDescriptor = new SecurityTokenDescriptor{
-                Subject = new ClaimsIdentity(new[] { new Claim("Pamaxie", ownerId.ToString()) }),
+                Subject = new ClaimsIdentity(new[] { new Claim("Pamaxie", "Pamaxie") }),
                 Issuer = "api.pamaxie.com",
                 Claims = new Dictionary<string, object>
                 {
