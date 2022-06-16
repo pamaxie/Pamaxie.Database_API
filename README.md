@@ -13,3 +13,7 @@ If you want to make your own Database Driver, you can have a look at the Databas
 #### Possible thanks to:
 
 ![**Federal Minstry Of Research and education**](https://i.imgur.com/riyuVGf.jpg) ![**Federal Minstry Of Research and education**](https://i.imgur.com/GI9XILN.png)
+
+#### Thanks to these partners helping us keep this project alive:
+
+![**eclips.is**](https://eclips.is/images/logo.png)
