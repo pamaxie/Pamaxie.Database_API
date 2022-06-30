@@ -288,7 +288,7 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
     }
 
     /// <inheritdoc cref="SetConfirmationCodeAsync"/>
-    public async Task<bool> SetConfirmationCodeAsync(long userId, string confirmationCode)
+    public async Task<bool> SetConfirmationCodeAsync(long userId, string confirmationCode, bool is_refresh = false)
     {
         await using var context = new PgSqlContext();
 
@@ -299,6 +299,10 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
         }
         else
         {
+            if (is_refresh){
+                return false;
+            }
+
             await context.EmailConfirmations.AddAsync(new EmailConfirmation()
                 {UserId = userId, ConfirmationCode = confirmationCode});
         }
