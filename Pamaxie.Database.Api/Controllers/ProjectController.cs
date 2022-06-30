@@ -117,7 +117,7 @@ public class ProjectController : ControllerBase
     }
 
     /// <summary>
-    /// Updates an existing Project
+    /// Updates an existing Project, please ensure all data is requested before reaching in data here.
     /// </summary>
     /// <returns></returns>
     [HttpPost("Update")]
@@ -156,10 +156,15 @@ public class ProjectController : ControllerBase
             return BadRequest("Malformed request body.");
         }
 
-        if (string.IsNullOrWhiteSpace(project.Name) || project.Owner.Data.UserId < 1 || project.Id < 1)
+
+        if (string.IsNullOrWhiteSpace(project.Name) || project.Owner?.Data.UserId == 0 || project.Id == 0)
         {
             return BadRequest(
                 "The reached in data is not valid. Please make sure the owner, name and Id contain a value");
+        }
+
+        if (project.Owner == null){
+            return BadRequest("The owner of the project could not be found. Ensure that the Owner of the project was reached in with the request.");
         }
 
         if (!await _dbDriver.Service.Projects.ExistsAsync(project.Id))
@@ -205,7 +210,7 @@ public class ProjectController : ControllerBase
     /// <param name="projectId"></param>
     /// <returns></returns>
     [HttpGet("Get={projectId}")]
-    public async Task<ActionResult<PamUser>> GetProject(long projectId)
+    public async Task<ActionResult<PamProject>> GetProject(long projectId)
     {
         var token = Request.Headers["authorization"];
         
