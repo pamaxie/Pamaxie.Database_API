@@ -124,8 +124,9 @@ namespace Pamaxie.Database.Extensions.DataInteraction
         /// </summary>
         /// <param name="userId"></param>
         /// <param name="confirmationCode"></param>
+        /// <param name="is_refresh">should we refresh / recreate the value if one already exists?</param>
         /// <returns></returns>
-        public Task<bool> SetConfirmationCodeAsync(long userId, string confirmationCode);
+        public Task<bool> SetConfirmationCodeAsync(long userId, string confirmationCode, bool is_refresh = false);
 
         /// <summary>
         /// Validates if a confirmation code is correct.

@@ -69,7 +69,7 @@ public sealed class UserController : ControllerBase
             return Unauthorized();
         }
         
-        var authResult = await ValidateUserCredentials(authHeader.Substring("Basic ".Length).Trim());
+        var authResult = await ValidateUserCredentials(authHeader.Substring("Basic ".Length).Trim(), true);
         
         if (!authResult.SuccessfulAuth)
         {
@@ -83,11 +83,11 @@ public sealed class UserController : ControllerBase
     }
     
     /// <summary>
-    /// Signs in a user via Basic authentication and returns a token.
+    /// Refreshes a user's auth token
     /// </summary>
     /// <returns><see cref="JwtToken"/> Token for Authentication</returns>
     [HttpGet("RefreshToken")]
-    public async Task<ActionResult<JwtToken>> UpdateTask()
+    public async Task<ActionResult<JwtToken>> RefreshToken()
     {
         var token = Request.Headers["authorization"];
         
@@ -123,7 +123,7 @@ public sealed class UserController : ControllerBase
     }
     
     /// <summary>
-    /// Signs in a user via Basic authentication and returns a token.
+    /// Creates a new user Account
     /// </summary>
     /// <returns><see cref="JwtToken"/> Token for Authentication</returns>
     [HttpPost("Create")]
@@ -230,6 +230,43 @@ public sealed class UserController : ControllerBase
 
         return Ok("Thank you for confirming your account. We will get back in touch with you once we cleared you" +
                   "for our closed Beta");
+    }
+
+    /// <summary>
+    /// Resends a user their verification code via email
+    /// </summary>
+    /// <returns></returns>
+    [HttpGet("ResendVerification")]
+    public async Task<ActionResult<bool>> ResendVerification()
+    {
+        var token = Request.Headers["authorization"];
+        
+        if (JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
+
+        var userId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (userId < 1 || await IsUserLocked(userId))
+        {
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
+
+        PamUser user = await GetRequestBodyPamUserAsync();
+
+        if (user.Id < 1)
+        {
+            return BadRequest("The user Id is not valid. Please ensure you are using a valid user id");
+        }
+
+        var result = await SendConfirmationEmailAsync(user.Id, user.Email, user.UserName, true);
+
+        if(!result) {
+            return BadRequest("The user is already verified in our system and cannot be verified again. If this is not the case please contact support.");
+        }
+
+        return Ok("Sent a new verification email to your current email address");
     }
 
     /// <summary>
@@ -423,11 +460,6 @@ public sealed class UserController : ControllerBase
         }
 
         var requestingUserId = JwtTokenGenerator.GetOwnerKey(token);
-        
-        if (requestingUserId < 1 || !await ValidateUserAccess(requestingUserId))
-        {
-            return Unauthorized("The user is not authorized to access our system any longer");
-        }
         
         if (!await IsPamStaff(requestingUserId))
         {
@@ -715,7 +747,7 @@ public sealed class UserController : ControllerBase
         return true;
     }
     
-    private async Task<bool> SendConfirmationEmailAsync(long userId, string userEmail, string userName)
+    private async Task<bool> SendConfirmationEmailAsync(long userId, string userEmail, string userName, bool is_refresh = false)
     {
         var token = Environment.GetEnvironmentVariable(AppConfigManagement.SendGridVar);
 
@@ -733,6 +765,17 @@ public sealed class UserController : ControllerBase
 
         var confirmationCode = Convert.ToHexString(RandomNumberGenerator.GetBytes(10));
 
+        if (string.IsNullOrWhiteSpace(confirmationCode))
+        {
+            return false;
+        }
+
+        var result = await _dbDriver.Service.Users.SetConfirmationCodeAsync(userId, confirmationCode, is_refresh);
+
+        if (!result){
+            return false;
+        }
+
         msg.SetTemplateData(new
         {
             UserName = userName,
@@ -740,14 +783,6 @@ public sealed class UserController : ControllerBase
         });
 
         await client.SendEmailAsync(msg);
-
-        if (string.IsNullOrWhiteSpace(confirmationCode))
-        {
-            return false;
-        }
-
-        await _dbDriver.Service.Users.SetConfirmationCodeAsync(userId, confirmationCode);
-
         return true;
     }
     
@@ -779,12 +814,23 @@ public sealed class UserController : ControllerBase
         var dbObj = await _dbDriver.Service.Users.GetAsync(userId);
         if (dbObj is PamUser user)
         {
-            return user.Flags.HasFlag(UserFlags.PamaxieStaff);
+            return user.Flags.HasFlag(UserFlags.PamaxieStaff) && !user.Flags.HasFlag(UserFlags.Locked);
         }
 
         return false;
     }
     
+    private async Task<bool> IsUserLocked(long userId)
+    {
+        var dbObj = await _dbDriver.Service.Users.GetAsync(userId);
+        if (dbObj is PamUser user)
+        {
+            return user.Flags.HasFlag(UserFlags.Locked);
+        }
+
+        return false;
+    }
+
     private async Task<bool> ValidateUserAccess(long userId)
     {
         var dbObj = await _dbDriver.Service.Users.GetAsync(userId);
@@ -796,7 +842,7 @@ public sealed class UserController : ControllerBase
         return false;
     }
 
-    private async Task<(bool SuccessfulAuth, IPamUser user)> ValidateUserCredentials(string credentials)
+    private async Task<(bool SuccessfulAuth, IPamUser user)> ValidateUserCredentials(string credentials, bool skipFlagCheck = false)
     {
         var encoding = Encoding.GetEncoding("iso-8859-1");
         var usernamePassword = encoding.GetString(Convert.FromBase64String(credentials));
@@ -817,9 +863,12 @@ public sealed class UserController : ControllerBase
         }
 
         //Validate the user has access to our closed access alpha and has a confirmed account
-        if (!user.Flags.HasFlag(UserFlags.HasClosedAccess) || !user.Flags.HasFlag(UserFlags.ConfirmedAccount))
+        if(!skipFlagCheck)
         {
-            return (false, user);
+            if (!user.Flags.HasFlag(UserFlags.HasClosedAccess) || !user.Flags.HasFlag(UserFlags.ConfirmedAccount))
+            {
+                return (false, user);
+            }
         }
         
         if (await _dbDriver.Service.Users.ValidatePassword(userPass, user.Id))
