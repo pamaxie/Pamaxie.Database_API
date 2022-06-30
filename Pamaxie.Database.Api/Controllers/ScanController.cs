@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Mime;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using CoenM.ImageHash.HashAlgorithms;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -12,6 +13,8 @@ using Pamaxie.Authentication;
 using Pamaxie.Data;
 using Pamaxie.Database.Extensions;
 using Pamaxie.Database.Native.NoSql;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Pamaxie.Database.Api.Controllers;
 
@@ -72,24 +75,24 @@ public sealed class ScanController : ControllerBase
             return Unauthorized();
         }
 
-        var auth = await _dbDriver.Service.Projects.ValidateTokenAsync(authHeader.Substring("Token ".Length).Trim());
+        var auth = await _dbDriver.Service.Projects.ValidateTokenAsync(authHeader.Substring("Token ".Length)?.Trim());
         if (!auth.wasSuccess)
         {
             return Unauthorized("Invalid API Access token.");
         }
         
-        //Create a new ScanMachine
-        var scanMachine =
+        //TODO: Think about a concept for these scan GUIDs that makes sense, This currently jsut pretty much garbages up our database ATM so it's disabled.
+        /*var scanMachine =
             await _dbDriver.Service.ScanMachines.CreateAsync(auth.projectId, auth.apiKeyId, Guid.NewGuid().ToString());
 
         if (!scanMachine.wasCreated)
         {
             return StatusCode(503,
                 "Could not create scan machine GUID. Please try again or contract support if the issue persists.");
-        }
+        }*/
 
         var jwtScanMachineSettings = new JwtScanMachineSettings()
-            {IsScanMachine = true, ProjectId = auth.projectId, ScanMachineGuid = scanMachine.createdId};
+            {IsScanMachine = true, ProjectId = auth.projectId, ScanMachineGuid = Guid.NewGuid().ToString()};
 
         var newToken = _generator.CreateToken(auth.apiKeyId, AppConfigManagement.JwtSettings, jwtScanMachineSettings, true);
         var items = new { Token = newToken, ProjectId = auth.projectId};
@@ -232,7 +235,7 @@ public sealed class ScanController : ControllerBase
     }
     
     /// <summary>
-    /// Signs in a user via Basic authentication and returns a token.
+    /// Checks if a hash or a hash similar to the one provided exists
     /// </summary>
     /// <returns><see cref="JwtToken"/> Token for Authentication</returns>
     [HttpGet("Get={scanHash}")]
@@ -275,7 +278,13 @@ public sealed class ScanController : ControllerBase
         var existsAsync = await _dbDriver.Service.Scans.ExistsAsync(scanHash);
         if (!existsAsync)
         {
-            return NotFound();
+            var hammingSearch = await _dbDriver.Service.Scans.GetWithHammingDistance(scanHash, 0.88);
+
+            if(hammingSearch == null){
+                return NotFound();
+            }
+            
+            return Ok(hammingSearch);
         }
 
         var scan = await _dbDriver.Service.Scans.GetSerializedData(scanHash);
@@ -375,6 +384,44 @@ public sealed class ScanController : ControllerBase
         }
 
         return Unauthorized("The token was not recognized as a valid internal token. Please ensure you are using a valid token.");
+    }
+
+    /// <summary>
+    /// Calculates the Perceptual hash for an Image
+    /// </summary>
+    /// <returns></returns>
+    [HttpPost("GetImageHash")]
+    public async Task<ActionResult> GetImageHash(){
+        var token = Request.Headers["authorization"];
+        
+        if (!JwtTokenGenerator.IsApplicationToken(token))
+        {
+            return Unauthorized("Invalid Token type");
+        }
+
+        var apiKeyId = JwtTokenGenerator.GetOwnerKey(token);
+        
+        if (apiKeyId < 1 || !await ValidateApiKeyAccess(apiKeyId))
+        {
+            return Unauthorized("The user is not authorized to access our system any longer");
+        }
+        
+        var projectId = JwtTokenGenerator.GetProjectId(token);
+        var scanMachine = JwtTokenGenerator.GetMachineGuid(token);
+
+        if (!await _dbDriver.Service.Projects.IsPamProject(projectId))
+        {
+            return Unauthorized("You are not allowed to delete any scan data, if you are not part of Pamaxie's staff.");
+        }
+
+        try{
+            var hashAlgorithm = new AverageHash();
+            using Image<Rgba32> image = Image.Load<Rgba32>(Request.BodyReader.AsStream());
+            ulong imageHash = hashAlgorithm.Hash(image);
+            return Ok(imageHash);
+        }catch(UnknownImageFormatException){
+            return BadRequest();
+        }
     }
     
     private bool IsValidMd5(string s)
