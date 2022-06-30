@@ -324,8 +324,8 @@ public class PamUserInteraction : PamSqlInteractionBase<User>, IPamUserInteracti
             return (false, 0);
         }
         
-        //context.EmailConfirmations.Remove(confirmation);
-        //await context.SaveChangesAsync();
+        context.EmailConfirmations.Remove(confirmation);
+        await context.SaveChangesAsync();
         return (true, confirmation.UserId);
     }
 }
