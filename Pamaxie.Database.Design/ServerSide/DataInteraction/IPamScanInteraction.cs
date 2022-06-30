@@ -22,4 +22,12 @@ public interface IPamScanInteraction : IPamInteractionBase<IPamNoSqlObject, stri
     /// <param name="key"></param>
     /// <returns></returns>
     public Task<bool> DeleteAsync(string key);
+
+    /// <summary>
+    /// Gets an item within a specified hamming distance of said item
+    /// </summary>
+    /// <param name="key">Hash of the item to get</param>
+    /// <param name="key">Hamming distance in percent to get from</param>
+    /// <returns></returns>
+    public Task<IPamNoSqlObject> GetWithHammingDistance(string key, double hammingDistance);
 }
